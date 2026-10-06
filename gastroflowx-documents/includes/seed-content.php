@@ -19,7 +19,7 @@ function gfxdoc_seed_documents() {
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">Weranda Lunch and Wine — opis systemu pracowniczego i wszystkich jego funkcji</p>
 [gfxbox color="blue"]
-Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego moduły, kto ma do nich dostęp i jakie dane każdy moduł przechowuje. Opis przygotowano na podstawie analizy kodu wszystkich jedenastu wtyczek wchodzących w skład systemu.<br/><br/>
+Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego moduły, kto ma do nich dostęp i jakie dane każdy moduł przechowuje. Opis przygotowano na podstawie analizy kodu wszystkich trzynastu wtyczek wchodzących w skład systemu (dwanaście modułów i łącznik Grafik → Godziny).<br/><br/>
 <strong>Wersja dokumentu:</strong> 2.0 &nbsp;|&nbsp; <strong>Stan na:</strong> październik 2026 &nbsp;|&nbsp; <strong>Przygotowano dla:</strong> Weranda Lunch and Wine (werandalunchwine.pl)
 [/gfxbox]
 <h2>Spis treści</h2>
@@ -37,10 +37,12 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li>Dokumenty — raporty dobowe z utargu</li>
 <li>Karty Dostępu i Listy Pracowników</li>
 <li>Dokumenty firmowe (regulaminy, polityki, porozumienia)</li>
+<li>Rejestr Aktywności Użytkowników</li>
 <li>Powiadomienia e-mail i push</li>
 <li>Bezpieczeństwo systemu</li>
 <li>Role systemowe — zestawienie</li>
 <li>Jakie dane przechowuje każdy moduł</li>
+<li>Przepływ danych i raport miesięczny</li>
 </ol>
 [gfxpagebreak]
 <h2>1. Czym jest GastroFlowx — opis ogólny</h2>
@@ -68,7 +70,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 </table>
 [gfxpagebreak]
 <h2>2. Architektura — jak moduły łączą się w jeden system</h2>
-<p>System składa się z <strong>jedenastu wtyczek WordPress</strong>. Każda odpowiada za jeden obszar pracy i ma własne tabele bazy danych oraz własne, zabezpieczone REST API. Wtyczka centralna — <strong>GastroFlowx Hub</strong> — spina je w jeden panel <code>[gastroflowx_app]</code> z jednym logowaniem, wspólnym menu i wspólną macierzą uprawnień.</p>
+<p>System składa się z <strong>dwunastu wtyczek WordPress</strong> oraz małego <strong>łącznika Grafik → Godziny</strong>. Każda odpowiada za jeden obszar pracy i ma własne tabele bazy danych oraz własne, zabezpieczone REST API. Wtyczka centralna — <strong>GastroFlowx Hub</strong> — spina je w jeden panel <code>[gastroflowx_app]</code> z jednym logowaniem, wspólnym menu i wspólną macierzą uprawnień.</p>
 <table class="gfxdoc-table">
 <tr><th style="width:26%;">Moduł (wtyczka)</th><th>Do czego służy</th><th style="width:22%;">Gdzie widoczny</th></tr>
 <tr><td><strong>GastroFlowx Hub</strong><br/><span class="small">gastroflowx-hub</span></td><td>Logowanie, menu, uprawnienia ról, Moje konto, Urodziny, zgody, aplikacja PWA, centralne powiadomienia push.</td><td>Strona domowa, Moje konto, Urodziny</td></tr>
@@ -81,6 +83,8 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td><strong>GastroFlowX Pliki</strong><br/><span class="small">gastroflowx-pliki</span></td><td>Biblioteka druków: raporty utargu, listy obowiązków, checklisty HACCP; edytor i druk grupowy.</td><td>Pliki / Dokumenty</td></tr>
 <tr><td><strong>Dokumenty GastroFlowX</strong><br/><span class="small">gastroflowx-dokumenty</span></td><td>Raporty dobowe: zdjęcia wydruków z kasy fiskalnej i terminala składane w jeden PDF.</td><td>Raporty dobowe</td></tr>
 <tr><td><strong>Access Cards</strong><br/><span class="small">gastroflowx-access-cards</span></td><td>Dwustronne karty dostępu z kodami QR oraz listy pracowników do druku.</td><td class="small">tylko administrator (wp-admin)</td></tr>
+<tr><td><strong>WP User Activity Tracker</strong><br/><span class="small">wp-user-activity-tracker</span></td><td>Rejestr logowań, sesji, odwiedzanych stron i edycji — bezpieczeństwo i rozliczalność.</td><td class="small">tylko administrator (wp-admin)</td></tr>
+<tr><td><strong>Łącznik Grafik → Godziny</strong><br/><span class="small">gastroflowx-grafik-godziny</span></td><td>Podpowiada w Ewidencji Godzin godzinę rozpoczęcia z opublikowanego grafiku.</td><td class="small">działa w tle</td></tr>
 <tr><td><strong>GastroFlowx Documents</strong><br/><span class="small">gastroflowx-documents</span></td><td>Edytor dokumentów firmowych (ten dokument, polityka, regulamin, porozumienie) z eksportem do PDF.</td><td class="small">tylko administrator (wp-admin)</td></tr>
 </table>
 <p class="note">Moduły Menu, Pliki i Dokumenty (raporty dobowe) dodaje się do panelu w <code>GastroFlowx → Moduły</code> (nazwa, ikona, shortcode). Ich dokładne nazwy w menu ustala administrator.</p>
@@ -92,7 +96,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Wspólny wygląd</strong> — wszystkie moduły używają tego samego niebieskiego motywu GastroFlowx (kolor przewodni #2563EB) i ikon Font Awesome.</li>
 </ul>
 [gfxbox color="muted"]
-<strong>Ewidencja Godzin a Grafik i Napiwki.</strong> Ewidencja Godzin ma przygotowane miejsca integracji (filtry <code>ehtt_suggested_start_time</code> i <code>ehtt_daily_tips_amount</code>). W obecnej konfiguracji sugerowana godzina rozpoczęcia i napiwki dnia pochodzą z wewnętrznych tabel Ewidencji, które uzupełnia osoba zarządzająca. Automatyczne pobieranie danych z Grafiku i Napiwków wymaga dopisania krótkiego łącznika.
+<strong>Ewidencja Godzin a Grafik.</strong> Łącznik <em>GastroFlowx — Grafik → Godziny</em> sprawia, że Ewidencja Godzin podpowiada godzinę rozpoczęcia pracy z opublikowanej zmiany w Grafiku (najwcześniejsza zmiana danego dnia; wersje robocze i znaczniki „Nieobecny/Dostępny” są pomijane). Ręczny wpis osoby zarządzającej Ewidencją ma pierwszeństwo przed Grafikiem. Napiwki dnia w Ewidencji wpisuje się na razie ręcznie — integracja z modułem Napiwków wymaga osobnego łącznika.
 [/gfxbox]
 [gfxpagebreak]
 <h2>3. Panel Pracownika (Hub) [gfxbadge]wszyscy pracownicy[/gfxbadge]</h2>
@@ -180,11 +184,12 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <h2>6. Ewidencja Godzin Pracy [gfxbadge]wszyscy pracownicy[/gfxbadge]</h2>
 <ul>
 <li>Zakładka <strong>Dzień</strong> — godzina rozpoczęcia i zakończenia pracy, zawsze zaokrąglana do 15 minut; czas pokazywany jako np. „7,5 h”; notatka.</li>
+<li><strong>Podpowiedź z Grafiku</strong> — godzina rozpoczęcia jest wstępnie ustawiana na początek Twojej zmiany z Grafiku; można ją zmienić.</li>
 <li><strong>Stawka godzinowa</strong> — ogólna, z możliwością nadpisania dla konkretnej osoby lub dnia.</li>
 <li><strong>Napiwki dnia</strong> z podziałem na kuchnię i bar (konfigurowalne %).</li>
 <li><strong>Podsumowanie dnia</strong> — zarobek z godzin, napiwki brutto/netto, kwota przelewu, gotówka po odliczeniu podziału, łączny zarobek.</li>
 <li><strong>Kalendarz i podsumowanie</strong> — siatka miesiąca z godzinami, zarobkiem i napiwkami.</li>
-<li>Każdy widzi i edytuje <u>wyłącznie własne</u> wpisy. Osoba z uprawnieniem <code>ehtt_manage_timesheets</code> (domyślnie administrator) widzi wszystkich, ustawia stawki, ręcznie uzupełnia sugerowane godziny i napiwki oraz zmienia ustawienia.</li>
+<li>Każdy widzi i edytuje <u>wyłącznie własne</u> wpisy. Osoba z uprawnieniem <code>ehtt_manage_timesheets</code> (domyślnie administrator) widzi wszystkich, ustawia stawki, ręcznie nadpisuje podpowiedzi godzin i uzupełnia napiwki dnia oraz zmienia ustawienia.</li>
 </ul>
 <h2>7. Generator Menu Lunchowego [gfxbadge]rola „lunch” / administrator[/gfxbadge]</h2>
 <ul>
@@ -237,25 +242,40 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <h2>13. Dokumenty firmowe [gfxbadge]tylko administrator[/gfxbadge]</h2>
 <p>Edytor w wp-admin do prowadzenia dokumentów takich jak ten: gotowe bloki w stylu GastroFlowx (ramki, plakietki, pola do wypełnienia, tabela podpisów, podział strony), eksport do PDF jednym kliknięciem, historia wersji. Można też wgrać gotowy PDF i edytować go w panelu (dopisywanie tekstu, zaczernianie fragmentów).</p>
 [gfxpagebreak]
-<h2>14. Powiadomienia e-mail i push</h2>
+<h2>14. Rejestr Aktywności Użytkowników [gfxbadge]tylko administrator[/gfxbadge]</h2>
+<p>Wtyczka bezpieczeństwa i rozliczalności (wp-admin → „Aktywność użytkowników”), niewidoczna dla pracowników. Rejestruje wyłącznie zalogowanych użytkowników.</p>
+<table class="gfxdoc-table">
+<tr><th style="width:30%;">Co rejestruje</th><th>Szczegóły</th></tr>
+<tr><td>Logowania i wylogowania</td><td>Data i godzina, czas trwania sesji. Sesja bez wylogowania jest domykana automatycznie po 12 h bez aktywności. Logowanie kodem QR z karty dostępu nie jest odnotowywane jako logowanie.</td></tr>
+<tr><td>Odwiedzane strony</td><td>Adres strony przy każdym pełnym wczytaniu strony panelu (przełączanie zakładek wewnątrz modułów nie jest rejestrowane); znacznik ostatniej aktywności.</td></tr>
+<tr><td>Edycje treści</td><td>Zapis wpisów, stron i innych treści WordPress (np. dokumentów firmowych).</td></tr>
+<tr><td>Zamówienia WooCommerce</td><td>Zmiany statusów zamówień — tylko jeśli WooCommerce jest aktywne (w GastroFlowx nie jest używane).</td></tr>
+<tr><td>Adres IP i lokalizacja</td><td>Adres IP oraz przybliżony kraj i miasto ustalane przez zewnętrzny serwis ip-api.com (wynik zapamiętywany 30 dni dla danego IP).</td></tr>
+</table>
+<ul>
+<li>Widok „Online teraz” (aktywni w ostatnich 5 minutach), filtrowanie dziennika, eksport do CSV.</li>
+<li>Ustawienia: włączanie i wyłączanie każdej kategorii, okres przechowywania (domyślnie <strong>90 dni</strong>, czyszczenie codzienne), próg „online”, usuwanie danych przy odinstalowaniu.</li>
+<li>Dostęp wyłącznie z uprawnieniem <code>manage_options</code> (administrator).</li>
+</ul>
+<h2>15. Powiadomienia e-mail i push</h2>
 <table class="gfxdoc-table">
 <tr><th style="width:22%;">Kanał</th><th>Jak działa</th></tr>
 <tr><td>E-mail</td><td>Wysyłany z serwera systemu (funkcja <code>wp_mail</code>) na adres e-mail z konta. Grafik wysyła wiadomości automatycznie (patrz pkt 4); Napiwki — wyłącznie ręcznie, po potwierdzeniu.</td></tr>
 <tr><td>Push</td><td>Firebase Cloud Messaging (Google), konfigurowany w Hubie. Trafia tylko na urządzenia, na których pracownik kliknął „Włącz powiadomienia” i zezwolił w przeglądarce. Każda wysyłka jest zapisywana w historii (ostatnie 5000 wpisów).</td></tr>
 <tr><td>Kalendarz</td><td>Prywatny kanał iCal grafiku, który pracownik sam może dodać do Kalendarza Google lub iOS.</td></tr>
 </table>
-<h2>15. Bezpieczeństwo systemu</h2>
+<h2>16. Bezpieczeństwo systemu</h2>
 <ul>
 <li>Połączenie szyfrowane (HTTPS); każde zapytanie do danych wymaga zalogowania i jednorazowego tokenu bezpieczeństwa WordPress (nonce).</li>
 <li>Uprawnienia sprawdzane po stronie serwera w każdym module — nie tylko ukrywanie przycisków.</li>
 <li>Blokada <code>/wp-admin/</code> i paska administracyjnego dla wszystkich poza administratorem.</li>
 <li>Pliki z modułów Pliki i Dokumenty zapisywane pod losowymi nazwami w katalogach zablokowanych przed bezpośrednim dostępem; wydawane tylko po sprawdzeniu uprawnień.</li>
 <li>Sprawdzanie typu wgrywanych plików po zawartości, limity rozmiaru.</li>
-<li>Rejestr zgód (kto, kiedy, jaka wersja polityki, z jakiego IP) — rozliczalność wymagana przez RODO.</li>
+<li>Rejestr zgód (kto, kiedy, jaka wersja polityki, z jakiego IP) i rejestr aktywności — rozliczalność wymagana przez RODO.</li>
 <li>Usunięcie lub wyłączenie wtyczek domyślnie <u>nie kasuje</u> danych (chroni przed przypadkową utratą rozliczeń).</li>
 </ul>
 [gfxpagebreak]
-<h2>16. Role systemowe — zestawienie</h2>
+<h2>17. Role systemowe — zestawienie</h2>
 <table class="gfxdoc-table">
 <tr><th style="width:26%;">Rola</th><th style="width:30%;">Moduły</th><th>Opis</th></tr>
 <tr><td><code>administrator</code></td><td>wszystkie</td><td>Pełny dostęp do panelu i do wp-admin; konfiguracja systemu.</td></tr>
@@ -272,7 +292,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td><code>menu_manager</code></td><td>Menu</td><td>Menedżer menu — baza dań i karta menu.</td></tr>
 </table>
 <p class="note">Dostęp do kategorii panelu ustawia się w <code>GastroFlowx → Dostęp ról</code>; dostęp do Plików, Dokumentów i Menu — dodatkowo w ustawieniach tych modułów.</p>
-<h2>17. Jakie dane przechowuje każdy moduł</h2>
+<h2>18. Jakie dane przechowuje każdy moduł</h2>
 <table class="gfxdoc-table">
 <tr><th style="width:22%;">Moduł</th><th>Dane osobowe pracowników</th></tr>
 <tr><td>Hub</td><td>Login, imię i nazwisko, e-mail, hasło (zaszyfrowane), role, tytuł, zdjęcie profilowe, data urodzenia; historia zgód (data, wersja polityki, IP); urządzenia z włączonym push (identyfikator urządzenia, token FCM, ostatnia aktywność); historia wysyłki push (odbiorca, tytuł, status).</td></tr>
@@ -282,9 +302,16 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td>Dokumenty (raporty)</td><td>Kto i kiedy wygenerował raport lub dodał zdjęcie; przy włączonym Archiwum — zdjęcia wydruków kasowych.</td></tr>
 <tr><td>Pliki</td><td>Autor dokumentu; treść druków (bez danych osobowych, chyba że ktoś je wpisze).</td></tr>
 <tr><td>Karty Dostępu</td><td>Klucz logowania QR; dane drukowane na kartach i listach (imię i nazwisko, login, rola, ewentualnie hasło).</td></tr>
+<tr><td>Rejestr Aktywności</td><td>Login, rodzaj zdarzenia, odwiedzony adres lub edytowana treść, czas sesji, adres IP, kraj i miasto, data i godzina; znacznik ostatniej aktywności.</td></tr>
 <tr><td>Lunch, Menu, Kolorowanki</td><td>Brak danych osobowych (treści menu, szablony, pliki graficzne).</td></tr>
 </table>
-[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.0.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
+<h2>19. Przepływ danych i raport miesięczny</h2>
+<ul>
+<li><strong>Źródła danych:</strong> pracownicy (własne godziny, dyspozycyjność, wnioski, gotówka) oraz kierownicy zmian, menadżerowie i osoby rozliczające (karta i serwis kelnerów, godziny personelu, grafik), którzy przekazują informacje Administratorowi systemu lub wprowadzają je w ramach przyznanych uprawnień.</li>
+<li><strong>Raport miesięczny:</strong> po zakończeniu miesiąca dla każdej sekcji przygotowywany jest raport rozliczenia napiwków. Kwoty w raporcie są <strong>jawne dla wszystkich pracowników danej sekcji</strong> uczestniczących w podziale — zgodnie z §3 „Regulaminu podziału i rozliczania napiwków”.</li>
+<li><strong>Pracodawca nie otrzymuje danych z Systemu</strong> i nie ma do niego dostępu. Prowadzi własną, odrębną dokumentację wynagrodzeń i rozliczeń.</li>
+</ul>
+[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Łącznik Grafik → Godziny 1.0.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.0.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
 GFXDOC_SEED,
 		),
 		array(
@@ -379,7 +406,7 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 </ol>
 <h3>3.3 Godziny</h3>
 <ol class="steps">
-<li>Zakładka <strong>Dzień</strong> → wpisz godzinę rozpoczęcia i zakończenia (zaokrąglają się do 15 minut). Jeśli godzina rozpoczęcia jest podpowiedziana, sprawdź ją i w razie potrzeby popraw.</li>
+<li>Zakładka <strong>Dzień</strong> → wpisz godzinę rozpoczęcia i zakończenia (zaokrąglają się do 15 minut). Godzina rozpoczęcia jest podpowiadana z Twojej zmiany w Grafiku — sprawdź ją i popraw, jeśli zacząłeś/zaczęłaś o innej porze.</li>
 <li>Sprawdź podsumowanie: zarobek z godzin, napiwki, łączny zarobek.</li>
 <li><strong>Kalendarz i podsumowanie</strong> — cały miesiąc w jednym widoku.</li>
 </ol>
@@ -455,7 +482,7 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <li>Zakładka <strong>Miesiąc</strong> → „Raport Managera” i „Podsumowanie Miesiąca”; „Sprawdź pracownika” dla pojedynczej osoby.</li>
 <li>Zakładka <strong>E-mail</strong> → wybierz miesiąc → sprawdź szablon → „Wyślij teraz” → potwierdź. Każdy kelner dostanie tylko własne kwoty.</li>
 <li>Zakładka <strong>Powiadomienia</strong> — to samo jako push.</li>
-<li>Przygotuj zbiorcze podsumowanie dla zespołu zgodnie z §3 regulaminu napiwków.</li>
+<li>Przekaż dane do raportu miesięcznego swojej sekcji — raport z jawnymi kwotami udostępniany jest pracownikom sekcji zgodnie z §3 regulaminu napiwków. Raportu ani innych danych z Systemu nie przekazuje się pracodawcy.</li>
 </ol>
 [gfxbox color="yellow"]Dane, które wprowadzasz, są poufne. Wykorzystuj je wyłącznie do rozliczeń, nie przekazuj osobom spoza podziału napiwków i nie wysyłaj zrzutów ekranu.[/gfxbox]
 [gfxbox color="party"]
@@ -512,7 +539,7 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <li>Otwórz moduł raportów dobowych i wybierz dzień w kalendarzu.</li>
 <li>Dodaj zdjęcia raportów z kasy fiskalnej i terminala („Zrób zdjęcie” lub z galerii). Zdjęcia rób prosto, ostro i w dobrym świetle.</li>
 <li>Ustaw kolejność stron (przeciągnij miniatury; na telefonie — za uchwyt z numerem), w razie potrzeby obróć zdjęcie.</li>
-<li>Kliknij „Generuj raport”. PDF pobierze się na urządzenie; możesz go też „Udostępnić” osobie wskazanej przez pracodawcę.</li>
+<li>Kliknij „Generuj raport”. PDF pobierze się na urządzenie; możesz go też „Udostępnić” zgodnie z procedurą rozliczania utargu obowiązującą w restauracji.</li>
 <li>Jeśli Archiwum jest włączone, raport zapisze się na serwerze i będzie dostępny w zakładce Archiwum.</li>
 </ol>
 [gfxbox color="yellow"]iPhone: jeśli pojawi się „format HEIC nie jest obsługiwany”, użyj przycisku „Zrób zdjęcie” albo ustaw Ustawienia → Aparat → Formaty → „Najbardziej zgodne”.[/gfxbox]
@@ -540,11 +567,23 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <li><strong>Ustawienia → Grafik: e-maile i push</strong>, <strong>Ustawienia → System Napiwków (SPA)</strong>, <strong>Ustawienia → Napiwki: e-maile</strong>, <strong>Ewidencja godzin → Ustawienia</strong>, <strong>Menu (dostęp)</strong>, <strong>Pliki (dokumenty)</strong>, <strong>Dokumenty</strong> (role, Archiwum).</li>
 <li>Po istotnej zmianie polityki prywatności zaktualizuj dokument pod linkiem z Ustawień ogólnych, zmień numer wersji (opcja <code>gfx_privacy_policy_version</code>, domyślnie „1.0”) i poinformuj pracowników. Uwaga: system nie prosi automatycznie o ponowną zgodę po zmianie wersji — zapisuje tylko wersję przy kolejnych decyzjach.</li>
 </ul>
-<h3>13.4 Obowiązki związane z danymi</h3>
+<h3>13.4 Rejestr aktywności (menu „Aktywność użytkowników”)</h3>
+<ul>
+<li>Przeglądaj dziennik tylko w celach bezpieczeństwa i wyjaśniania błędów w rozliczeniach (kto i kiedy był zalogowany lub wprowadził zmianę) — nie do oceny pracy.</li>
+<li>Ustaw okres przechowywania (domyślnie 90 dni) i wyłącz kategorie, których nie potrzebujesz (np. WooCommerce; rozważ wyłączenie lokalizacji, jeśli wystarczy sam adres IP).</li>
+<li>Eksport CSV przechowuj bezpiecznie i usuwaj po wykorzystaniu.</li>
+<li>Pamiętaj, że logowanie kodem QR nie trafia do dziennika jako „Logowanie”.</li>
+</ul>
+<h3>13.5 Ewidencja godzin i łącznik z Grafikiem</h3>
+<ul>
+<li>Aktywuj wtyczkę <strong>GastroFlowx — Grafik → Godziny</strong> (przy aktywnym Grafiku i Ewidencji). Od tej chwili godzina rozpoczęcia podpowiada się z opublikowanej zmiany.</li>
+<li>Ręczny wpis w sekcji „Zarządzanie” Ewidencji nadpisuje podpowiedź z Grafiku na dany dzień.</li>
+</ul>
+<h3>13.6 Obowiązki związane z danymi</h3>
 <ul>
 <li>Regularne aktualizacje WordPressa i wtyczek, kopie zapasowe, silne hasło i ograniczenie liczby kont administratora.</li>
 <li>Obsługa wniosków pracowników (dostęp, sprostowanie, usunięcie) — w ciągu miesiąca.</li>
-<li>Reakcja na naruszenie (np. wyciek, zgubiony telefon z zalogowanym panelem): zablokuj dostęp, oceń ryzyko, w razie potrzeby zgłoś do UODO w ciągu 72 godzin i powiadom pracodawcę oraz osoby, których to dotyczy.</li>
+<li>Reakcja na naruszenie (np. wyciek, zgubiony telefon z zalogowanym panelem): zablokuj dostęp, oceń ryzyko, w razie potrzeby zgłoś do UODO w ciągu 72 godzin, powiadom osoby, których to dotyczy, i poinformuj pracodawcę o zdarzeniu (bez przekazywania danych).</li>
 <li>Nginx: dodaj blokady katalogów <code>/wp-content/uploads/gastroflowx-pliki/</code> i <code>/wp-content/uploads/gfx-dokumenty/</code> (na Apache robią to pliki .htaccess).</li>
 </ul>
 [gfxpagebreak]
@@ -725,7 +764,7 @@ GFXDOC_SEED,
 <h2>1. Kto jest administratorem danych</h2>
 <p>Administratorem danych osobowych przetwarzanych w systemie GastroFlowx (dalej: <strong>„System”</strong>) jest osoba wskazana powyżej (dalej: <strong>„Administrator”</strong>) — twórca Systemu i osoba nim zarządzająca.</p>
 [gfxbox color="yellow"]
-<strong>Charakter Systemu.</strong> System został stworzony i jest utrzymywany przez Administratora na serwerze wynajmowanym przez niego u dostawcy hostingu <strong>SeoHost.pl</strong>. Administrator jest pracownikiem restauracji Weranda Lunch and Wine. Pracodawca wyraża zgodę na korzystanie z Systemu przez pracowników, ale <u>nie jest administratorem danych w Systemie</u> — nie ma dostępu technicznego do Systemu i nie decyduje o sposobach przetwarzania. Zasady współpracy, w tym przekazywania danych pracodawcy, określa pisemne <em>„Porozumienie z pracodawcą w sprawie korzystania z systemu GastroFlowx i przekazywania danych”</em>. Pracodawca prowadzi niezależnie własną dokumentację wynagrodzeń i rozliczeń wymaganą przepisami.
+<strong>Charakter Systemu.</strong> System został stworzony i jest utrzymywany przez Administratora na serwerze wynajmowanym przez niego u dostawcy hostingu <strong>SeoHost.pl</strong>. Administrator jest pracownikiem restauracji Weranda Lunch and Wine. Pracodawca wyraża zgodę na korzystanie z Systemu przez pracowników, ale <u>nie jest administratorem danych w Systemie</u> — nie ma dostępu technicznego do Systemu i nie decyduje o sposobach przetwarzania. <strong>Pracodawca nie otrzymuje żadnych danych z Systemu</strong> i prowadzi własną, odrębną dokumentację wynagrodzeń i rozliczeń wymaganą przepisami. Zasady współpracy określa pisemne <em>„Porozumienie z pracodawcą w sprawie korzystania z systemu GastroFlowx i przekazywania danych”</em>.
 [/gfxbox]
 [gfxbox color="blue"]
 <strong>Kontakt w sprawach danych osobowych i zgłaszania naruszeń:</strong> <strong>iod@gastroflowx.pl</strong>
@@ -748,12 +787,13 @@ GFXDOC_SEED,
 <tr><td>Pliki i dokumenty</td><td>Autor dokumentu w bibliotece druków.</td><td>System.</td></tr>
 <tr><td>Powiadomienia</td><td>Urządzenia z włączonymi powiadomieniami push (identyfikator urządzenia, token Firebase, data ostatniej aktywności), historia wysyłki (odbiorca, tytuł, status, ewentualny błąd), treść wysłanych e-maili.</td><td>Twoje urządzenie, System.</td></tr>
 <tr><td>Karty dostępu</td><td>Indywidualny klucz logowania kodem QR; dane drukowane na karcie i liście (imię i nazwisko, login, rola, ewentualnie nowe hasło).</td><td>Administrator.</td></tr>
+<tr><td>Rejestr aktywności</td><td>Logowania i wylogowania (data, godzina, czas trwania sesji), adresy odwiedzanych stron panelu (przy pełnym wczytaniu strony), edycje treści WordPress, czas ostatniej aktywności, adres IP oraz przybliżony kraj i miasto ustalone na podstawie IP.</td><td>System, automatycznie.</td></tr>
 <tr><td>Dane techniczne</td><td>Adres IP i informacje o przeglądarce w standardowych dziennikach serwera hostingu; pliki cookie logowania WordPress.</td><td>Twoje urządzenie.</td></tr>
 </table>
 [gfxbox color="red"]
 <strong>System nie służy do przetwarzania danych o zdrowiu ani innych danych szczególnych kategorii (art. 9 RODO).</strong> Prosimy nie wpisywać takich informacji w powodach dni wolnych, komentarzach, notatkach i wiadomościach. Zwolnienia lekarskie i inne dokumenty kadrowe składa się bezpośrednio pracodawcy, poza Systemem. Dane takie wpisane przez pomyłkę zostaną usunięte.
 [/gfxbox]
-<p>System <u>nie śledzi</u> Twojej lokalizacji, nie rejestruje odwiedzanych stron poza zwykłymi dziennikami serwera i nie podejmuje wobec Ciebie decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu (art. 22 RODO). Automatycznie wygenerowany grafik jest tylko propozycją (wersją roboczą), którą zatwierdza menadżer; kwoty napiwków wylicza się według zasad regulaminu napiwków, a każde rozliczenie można zweryfikować i zakwestionować.</p>
+<p>System <u>nie korzysta z GPS</u> ani precyzyjnej lokalizacji urządzenia (lokalizacja w rejestrze aktywności to tylko orientacyjne miasto przypisane do adresu IP), nie służy do oceny pracy i nie podejmuje wobec Ciebie decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu (art. 22 RODO). Automatycznie wygenerowany grafik jest tylko propozycją (wersją roboczą), którą zatwierdza menadżer; kwoty napiwków wylicza się według zasad regulaminu napiwków, a każde rozliczenie można zweryfikować i zakwestionować.</p>
 [gfxpagebreak]
 <h2>5. Cele i podstawy prawne</h2>
 <table class="gfxdoc-table">
@@ -763,7 +803,9 @@ GFXDOC_SEED,
 <tr><td>Powiadomienia push na danym urządzeniu</td><td>Zgoda — art. 6 ust. 1 lit. a RODO, wyrażana osobno przyciskiem „Włącz powiadomienia” i w przeglądarce.</td></tr>
 <tr><td>Bezpieczeństwo Systemu, rozliczalność wpisów (kto i kiedy wprowadził dane), wykazanie zgód, obsługa wniosków i naruszeń</td><td>Prawnie uzasadniony interes Administratora — art. 6 ust. 1 lit. f RODO.</td></tr>
 <tr><td>Ustalenie, dochodzenie lub obrona roszczeń związanych z rozliczeniami</td><td>Prawnie uzasadniony interes — art. 6 ust. 1 lit. f RODO.</td></tr>
-<tr><td>Udostępnienie danych pracodawcy na zasadach z punktu 7</td><td>Prawnie uzasadniony interes Administratora i pracodawcy (rzetelność rozliczeń) — art. 6 ust. 1 lit. f RODO, w zakresie uzgodnionym w porozumieniu z pracodawcą.</td></tr>
+<tr><td>Rejestr aktywności: wykrywanie nieuprawnionego dostępu i nadużyć, ustalenie, kto i kiedy wprowadził lub zmienił dane mające wpływ na rozliczenia</td><td>Prawnie uzasadniony interes Administratora — art. 6 ust. 1 lit. f RODO. Masz prawo sprzeciwu (pkt 9).</td></tr>
+<tr><td>Przyjmowanie od kierowników zmian, menadżerów i osób rozliczających informacji o napiwkach, godzinach i grafiku osób z ich zespołu</td><td>Zgoda Użytkownika (art. 6 ust. 1 lit. a) oraz prawnie uzasadniony interes w rzetelnym rozliczeniu (art. 6 ust. 1 lit. f RODO).</td></tr>
+<tr><td>Miesięczny raport rozliczenia napiwków udostępniany pracownikom danej sekcji</td><td>Prawnie uzasadniony interes uczestników podziału w możliwości weryfikacji rozliczenia — art. 6 ust. 1 lit. f RODO, na zasadach §3 regulaminu napiwków.</td></tr>
 </table>
 <p>Zgodę można wycofać w każdej chwili w zakładce „Moje konto” lub pisząc na iod@gastroflowx.pl. Wycofanie zgody nie wpływa na zgodność z prawem przetwarzania, którego dokonano przed jej wycofaniem. Po wycofaniu zgody dostęp do panelu zostaje zablokowany; dane przechowywane na podstawie prawnie uzasadnionego interesu (pkt 8) pozostają do końca okresu przechowywania.</p>
 [gfxbox color="muted"]Ponieważ Administratorem jest osoba fizyczna, a nie pracodawca, przepisy Kodeksu pracy o monitoringu pracowników (art. 22<sup>2</sup>–22<sup>3</sup>) nie mają tu bezpośredniego zastosowania. System nie służy do kontroli pracy ani oceny pracowników.[/gfxbox]
@@ -775,10 +817,11 @@ GFXDOC_SEED,
 <tr><td>Pracownicy Twojej sekcji grafiku (kuchnia albo sala i bar)</td><td>Kalendarz offów sekcji: Twoje wnioski o dni wolne z datami, rodzajem i statusem; technicznie także wpisany powód i komentarz — dlatego wpisuj w nich tylko ogólne informacje.</td></tr>
 <tr><td>Menadżer Twojej sekcji grafiku</td><td>Twoją dyspozycyjność, wnioski z powodami, zamiany, zmiany w sekcji.</td></tr>
 <tr><td>Manager napiwków, Admin Bar / Admin Kuchnia</td><td>Kwoty napiwków, godziny i wypłaty osób, które rozliczają (w zakresie swojego działu).</td></tr>
-<tr><td>Uczestnicy podziału napiwków</td><td>Miesięczne zbiorcze podsumowanie napiwków na zasadach §3 „Regulaminu podziału i rozliczania napiwków”.</td></tr>
+<tr><td>Pracownicy Twojej sekcji uczestniczący w podziale napiwków</td><td>Raport miesięczny sekcji: imię i nazwisko oraz <strong>jawne kwoty</strong> napiwków (karta, serwis, kwoty dla baru i kuchni, suma) — na zasadach §3 „Regulaminu podziału i rozliczania napiwków”.</td></tr>
 <tr><td>Osoba zarządzająca ewidencją godzin</td><td>Godziny, stawki i zarobek wszystkich osób.</td></tr>
-<tr><td>Administrator</td><td>Wszystkie dane — wyłącznie w zakresie potrzebnym do utrzymania Systemu, pomocy użytkownikom i realizacji celów z pkt 5.</td></tr>
+<tr><td>Administrator</td><td>Wszystkie dane, w tym rejestr aktywności (wyłącznie Administrator) — wyłącznie w zakresie potrzebnym do utrzymania Systemu, pomocy użytkownikom i realizacji celów z pkt 5.</td></tr>
 </table>
+<p><strong>Skąd Administrator ma dane o Tobie:</strong> poza tym, co wpisujesz sam, informacje o kwotach napiwków, godzinach pracy i grafiku przekazują Administratorowi lub wprowadzają do Systemu kierownicy zmian, menadżerowie, manager napiwków oraz osoby rozliczające bar i kuchnię — w zakresie potrzebnym do rozliczenia.</p>
 <p>Osoby mające w Systemie uprawnienia do danych innych pracowników działają na podstawie upoważnienia Administratora i są zobowiązane do zachowania poufności.</p>
 <h2>7. Odbiorcy danych</h2>
 <ul>
@@ -786,7 +829,8 @@ GFXDOC_SEED,
 <li><strong>Google (Firebase Cloud Messaging)</strong> — doręcza powiadomienia push. Otrzymuje token urządzenia oraz tytuł i treść powiadomienia (np. informację o nowym grafiku, a przy powiadomieniach z Napiwków — kwoty rozliczenia). Google może przetwarzać dane poza Europejskim Obszarem Gospodarczym na podstawie decyzji stwierdzającej odpowiedni stopień ochrony (EU-U.S. Data Privacy Framework) lub standardowych klauzul umownych. Jeśli nie chcesz przekazywania tych danych, nie włączaj powiadomień push — e-mail działa niezależnie.</li>
 <li><strong>Dostawcy bibliotek (CDN)</strong> — unpkg.com, cdnjs.cloudflare.com, cdn.jsdelivr.net: przy otwieraniu niektórych modułów przeglądarka pobiera z nich skrypty i czcionki, przez co otrzymują one Twój adres IP i informacje o przeglądarce (bez danych z Systemu).</li>
 <li><strong>Twój kalendarz</strong> (Google, Apple) — tylko jeśli sam zasubskrybujesz grafik przez link iCal; wtedy dostawca kalendarza pobiera Twoje zmiany.</li>
-<li><strong>Pracodawca</strong> — wyłącznie na zasadach pisemnego porozumienia: zestawienia potrzebne do rozliczeń napiwków i wynagrodzeń, opublikowany grafik i raporty dobowe z utargu, przekazywane na wniosek pracodawcy i w zakresie niezbędnym. Pracodawca staje się wtedy odrębnym administratorem otrzymanych danych i odpowiada za nie samodzielnie. Pracodawca nie ma dostępu do Systemu.</li>
+<li><strong>ip-api.com</strong> — zewnętrzny serwis geolokalizacji, do którego rejestr aktywności wysyła adres IP (bez innych danych) w celu ustalenia kraju i miasta. Połączenie z tym serwisem nie jest szyfrowane (HTTP). Administrator może wyłączyć tę funkcję w ustawieniach rejestru.</li>
+<li><strong>Pracodawca nie jest odbiorcą danych.</strong> Administrator nie przekazuje pracodawcy żadnych danych z Systemu — ani rozliczeń, ani godzin, ani rejestru aktywności. Pracodawca nie ma dostępu do Systemu.</li>
 <li><strong>Organy publiczne</strong> — tylko gdy wymagają tego przepisy prawa.</li>
 </ul>
 <p class="note">Wcześniejsze wersje modułu Grafiku mogły korzystać z usługi OneSignal do powiadomień. Przy aktywnym panelu GastroFlowx z Firebase ten kanał jest wyłączony.</p>
@@ -800,6 +844,8 @@ GFXDOC_SEED,
 <tr><td>Tokeny urządzeń push</td><td>Do wyłączenia powiadomień, wycofania zgody lub usunięcia konta.</td></tr>
 <tr><td>Historia wysyłki push</td><td>Ostatnie 5000 wpisów — starsze są usuwane automatycznie.</td></tr>
 <tr><td>Raporty dobowe (Archiwum)</td><td>Archiwum domyślnie wyłączone (zdjęcia nie trafiają na serwer). Jeśli włączone — do usunięcia przez osobę zarządzającą, nie dłużej niż [gfxfillin] miesięcy.</td></tr>
+<tr><td>Rejestr aktywności</td><td>[gfxfillin width="60"] dni (ustawienie domyślne: 90 dni), potem automatyczne usunięcie; wynik geolokalizacji adresu IP — 30 dni.</td></tr>
+<tr><td>Raport miesięczny sekcji (wydruk)</td><td>Zgodnie z §3 regulaminu napiwków — zniszczenie po okresie wskazanym w regulaminie.</td></tr>
 <tr><td>Dzienniki serwera hostingu</td><td>Zgodnie z polityką SeoHost.pl.</td></tr>
 </table>
 <p class="note">Wyłączenie lub usunięcie wtyczek nie kasuje danych automatycznie (ochrona przed przypadkową utratą rozliczeń). Po upływie okresów przechowywania Administrator usuwa dane ręcznie lub poprzez opcje czyszczenia w modułach.</p>
@@ -821,7 +867,7 @@ GFXDOC_SEED,
 <li>Dostęp oparty na rolach, sprawdzany po stronie serwera w każdym module; podział grafiku na sekcje kuchni oraz sali i baru.</li>
 <li>Blokada panelu technicznego WordPress dla wszystkich poza Administratorem.</li>
 <li>Pliki zapisywane pod losowymi nazwami w katalogach bez bezpośredniego dostępu, wydawane po sprawdzeniu uprawnień.</li>
-<li>Rejestr zgód i historia wysyłki powiadomień.</li>
+<li>Rejestr zgód, rejestr aktywności (dostępny tylko dla Administratora) i historia wysyłki powiadomień.</li>
 <li>Kod QR logowania i prywatny link do kalendarza działają jak klucze — prosimy chronić je jak hasło. Utratę karty lub podejrzenie nieuprawnionego dostępu zgłoś natychmiast na iod@gastroflowx.pl.</li>
 </ul>
 <p>W razie naruszenia ochrony danych Administrator zgłasza je Prezesowi UODO w ciągu 72 godzin (gdy jest to wymagane), informuje osoby, których dotyczy wysokie ryzyko, oraz pracodawcę.</p>
@@ -832,7 +878,7 @@ GFXDOC_SEED,
 [gfxbox color="fill"]
 <table class="gfxdoc-table">
 <tr><td style="width:50%;"><strong>Data wejścia w życie</strong></td><td>[gfxfillin]</td></tr>
-<tr><td><strong>Wersja dokumentu</strong></td><td>3.0</td></tr>
+<tr><td><strong>Wersja dokumentu</strong></td><td>3.1</td></tr>
 </table>
 [/gfxbox]
 [gfxnote]Dokument przygotowany na podstawie analizy funkcji Systemu. Ma charakter pomocniczy i nie zastępuje porady prawnej — przed publikacją zaleca się konsultację z prawnikiem lub specjalistą ochrony danych osobowych.[/gfxnote]
@@ -958,7 +1004,6 @@ GFXDOC_SEED,
 [gfxfield label="Adres"][/gfxfield]
 [gfxfield label="NIP / KRS (jeśli dotyczy)"][/gfxfield]
 [gfxfield label="Reprezentowany przez"][/gfxfield]
-[gfxfield label="E-mail do kontaktu w sprawach danych"][/gfxfield]
 [/gfxfieldtable]
 <p style="margin-bottom:0;">— zwanym dalej <strong>„Pracodawcą”</strong>,</p>
 [/gfxbox]
@@ -974,104 +1019,105 @@ GFXDOC_SEED,
 <p style="margin-bottom:0;">— zwanym dalej <strong>„Administratorem”</strong>,</p>
 [/gfxbox]
 <p>zwanymi dalej łącznie <strong>„Stronami”</strong>.</p>
+[gfxbox color="blue"]
+<strong>Porozumienie w skrócie:</strong>
+<ul>
+<li>Administratorem systemu i danych w nim przetwarzanych jest <strong>Administrator</strong>.</li>
+<li>Dane do rozliczeń <strong>przekazują Administratorowi</strong> kierownicy zmian, menadżerowie i osoby rozliczające — za zgodą Pracodawcy.</li>
+<li><strong>Pracodawca prowadzi własną, odrębną dokumentację</strong> i <strong>nie otrzymuje żadnych danych</strong> z Systemu.</li>
+<li>Na koniec miesiąca Administrator udostępnia <strong>raport miesięczny każdej sekcji</strong> jej pracownikom — kwoty w raporcie są jawne.</li>
+</ul>
+[/gfxbox]
 <h2>§1. Definicje</h2>
 <ol>
 <li><strong>System</strong> — system informatyczny GastroFlowx stworzony i utrzymywany przez Administratora, opisany w dokumencie „Opis systemu i funkcji GastroFlowx”, obejmujący moduły wymienione w Załączniku nr 1.</li>
-<li><strong>Użytkownik</strong> — pracownik lub współpracownik restauracji, który dobrowolnie założył konto w Systemie i wyraził zgodę zgodnie z Polityką prywatności.</li>
-<li><strong>Polityka prywatności</strong> — „Polityka prywatności systemu GastroFlowx” udostępniana Użytkownikom przed wyrażeniem zgody.</li>
-<li><strong>Dane przekazywane</strong> — dane, które jedna Strona przekazuje drugiej na podstawie §5 i §6, wymienione w Załączniku nr 2.</li>
-<li><strong>RODO</strong> — rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679.</li>
+<li><strong>Użytkownik</strong> — pracownik restauracji, który dobrowolnie założył konto w Systemie i wyraził zgodę zgodnie z Polityką prywatności.</li>
+<li><strong>Osoby przekazujące dane</strong> — kierownicy zmian, menadżerowie, Szef Kuchni, manager napiwków oraz osoby rozliczające bar i kuchnię, wskazane w Załączniku nr 2.</li>
+<li><strong>Sekcja</strong> — zespół objęty wspólnym podziałem napiwków: sala (kelnerzy), bar, kuchnia — zgodnie z „Regulaminem podziału i rozliczania napiwków”.</li>
+<li><strong>Raport miesięczny</strong> — zestawienie rozliczenia napiwków danej sekcji za miesiąc kalendarzowy, opisane w §5.</li>
+<li><strong>Polityka prywatności</strong> — „Polityka prywatności systemu GastroFlowx”.</li>
 </ol>
 <h2>§2. Przedmiot porozumienia</h2>
 <ol>
-<li>Pracodawca oświadcza, że zna System i <strong>wyraża zgodę</strong> na jego dobrowolne wykorzystywanie przez pracowników restauracji jako narzędzia wspomagającego: grafik pracy, rozliczanie napiwków, ewidencję godzin, przygotowanie menu i druków oraz raporty dobowe z utargu.</li>
-<li>Porozumienie określa: role Stron w zakresie ochrony danych, zasady <strong>przekazywania danych</strong> między Stronami, obowiązki Stron oraz postępowanie po zakończeniu współpracy.</li>
-<li>Porozumienie nie stanowi zlecenia budowy, rozwoju ani utrzymania Systemu i nie zmienia warunków umowy o pracę Administratora. Wynagrodzenie za udostępnianie Systemu: [gfxfillin] (np. „nieodpłatnie” albo zgodnie z odrębną umową).</li>
+<li>Pracodawca oświadcza, że zna System i <strong>wyraża zgodę</strong> na jego dobrowolne wykorzystywanie przez pracowników restauracji jako narzędzia wspomagającego: grafik pracy, rozliczanie napiwków, ewidencję godzin, przygotowanie menu i druków oraz raporty dobowe.</li>
+<li>Porozumienie określa: rolę Administratora jako administratora danych, zasady <strong>przekazywania danych Administratorowi</strong> przez Osoby przekazujące dane, zasady udostępniania Raportu miesięcznego oraz postępowanie po zakończeniu współpracy.</li>
+<li>Porozumienie nie stanowi zlecenia budowy, rozwoju ani utrzymania Systemu i nie zmienia warunków umowy o pracę Administratora. System jest udostępniany nieodpłatnie, chyba że Strony postanowią inaczej w odrębnej umowie.</li>
 <li>System działa na serwerze wynajmowanym przez Administratora u dostawcy hostingu <strong>SeoHost.pl</strong> i pozostaje pod wyłączną kontrolą techniczną Administratora.</li>
-<li>Uruchomienie modułu wymienionego w Załączniku nr 1, który na dzień zawarcia porozumienia nie jest używany, nie wymaga nowego porozumienia — Administrator informuje o tym Pracodawcę z co najmniej [gfxfillin]-dniowym wyprzedzeniem. Dodanie nowego modułu, nieobjętego Załącznikiem nr 1, wymaga uzgodnienia w formie pisemnej lub elektronicznej (aneks).</li>
+<li>Uruchomienie modułu z Załącznika nr 1, który dziś nie jest używany, nie wymaga nowego porozumienia — Administrator informuje o tym Pracodawcę z wyprzedzeniem. Dodanie nowego modułu, nieobjętego Załącznikiem nr 1, wymaga aneksu w formie pisemnej lub elektronicznej.</li>
 </ol>
-<h2>§3. Dobrowolność korzystania z Systemu</h2>
+<h2>§3. Administrator danych i dobrowolność</h2>
 <ol>
-<li>Korzystanie z Systemu przez pracowników jest <strong>dobrowolne</strong>. Pracodawca nie będzie wymagał korzystania z Systemu jako warunku wykonywania obowiązków ani traktował korzystania lub niekorzystania z Systemu jako podstawy do oceny pracownika czy jego różnicowania.</li>
-<li>Pracodawca zapewnia pracownikom, którzy nie korzystają z Systemu lub wycofali zgodę, możliwość ustalania grafiku i rozliczeń tradycyjnymi metodami.</li>
-<li>Pracodawca nie będzie uzyskiwał danych z Systemu z pominięciem zasad niniejszego porozumienia, w szczególności przez korzystanie z cudzych kont, zrzuty ekranu lub wydruki przekazywane nieformalnie.</li>
+<li>Strony potwierdzają, że <strong>administratorem danych osobowych przetwarzanych w Systemie</strong> (art. 4 pkt 7 RODO) jest Administrator. Pracodawca nie jest administratorem ani współadministratorem tych danych, nie ma dostępu do Systemu i nie decyduje o sposobach przetwarzania.</li>
+<li>Korzystanie z Systemu przez pracowników jest <strong>dobrowolne</strong>. Pracodawca nie będzie wymagał korzystania z Systemu ani traktował korzystania lub niekorzystania z niego jako podstawy oceny lub różnicowania pracowników, i zapewnia osobom niekorzystającym z Systemu rozliczenia tradycyjnymi metodami.</li>
+<li>Administrator przetwarza dane zgodnie z RODO i Polityką prywatności, udostępnianą każdemu Użytkownikowi przed wyrażeniem zgody.</li>
 </ol>
-<h2>§4. Role Stron w zakresie ochrony danych</h2>
+<h2>§4. Przekazywanie danych Administratorowi</h2>
 <ol>
-<li>Strony potwierdzają, że <strong>administratorem danych osobowych przetwarzanych w Systemie</strong> (art. 4 pkt 7 RODO) jest Administrator. Pracodawca nie jest współadministratorem tych danych i nie ma dostępu do Systemu.</li>
-<li>W zakresie Danych przekazanych Pracodawcy na podstawie §5 Pracodawca staje się <strong>odrębnym, samodzielnym administratorem</strong> tych danych i przetwarza je na własną odpowiedzialność, na podstawie własnych podstaw prawnych (w szczególności przepisów prawa pracy, podatkowych i rachunkowych).</li>
-<li>W zakresie danych przekazanych Administratorowi na podstawie §6 Administrator przetwarza je jako administrator Systemu, zgodnie z Polityką prywatności.</li>
-<li>Porozumienie nie jest umową powierzenia przetwarzania (art. 28 RODO) ani uzgodnieniem współadministratorów (art. 26 RODO).</li>
-</ol>
-[gfxpagebreak]
-<h2>§5. Przekazywanie danych z Systemu Pracodawcy</h2>
-<ol>
-<li>Administrator przekazuje Pracodawcy wyłącznie dane wymienione w Załączniku nr 2 część A, w zakresie <strong>niezbędnym</strong> do celu, w jakim Pracodawca ich potrzebuje (np. rozliczenie wypłat napiwków, wynagrodzeń, weryfikacja utargu).</li>
-<li>Przekazanie następuje <strong>na pisemny lub elektroniczny wniosek</strong> Pracodawcy wskazujący cel, zakres i okres, albo cyklicznie w terminach z Załącznika nr 2 (np. miesięczne zestawienie napiwków do [gfxfillin] dnia następnego miesiąca).</li>
-<li>Dane przekazuje się w formie: pliku PDF lub arkusza zabezpieczonego hasłem przesłanego na adres e-mail Pracodawcy wskazany w porozumieniu (hasło przekazywane innym kanałem) albo wydruku przekazanego osobiście osobie upoważnionej przez Pracodawcę.</li>
-<li>Administrator odnotowuje każde przekazanie (data, zakres, odbiorca) w rejestrze przekazań prowadzonym zgodnie z Załącznikiem nr 3.</li>
-<li>Administrator nie przekazuje Pracodawcy: historii zgód, adresów IP, tokenów urządzeń, haseł, kluczy QR, zdjęć profilowych, dat urodzenia (z wyjątkiem informacji o stosowaniu ulgi podatkowej, jeśli jest potrzebna do rozliczeń), treści prywatnych notatek i komentarzy oraz danych Użytkowników, którzy wycofali zgodę — w zakresie danych zebranych po wycofaniu zgody.</li>
-<li>Pracodawca zobowiązuje się:
+<li>Pracodawca <strong>wyraża zgodę</strong>, aby Osoby przekazujące dane przekazywały Administratorowi — ustnie, na piśmie lub przez wprowadzenie do Systemu w ramach nadanych uprawnień — informacje potrzebne do rozliczeń w Systemie, w szczególności:
 <ol type="a">
-<li>wykorzystywać Dane przekazane wyłącznie do celu wskazanego we wniosku lub w Załączniku nr 2,</li>
-<li>zapewnić im odpowiednie zabezpieczenia i dostęp wyłącznie osób upoważnionych,</li>
-<li>wypełnić wobec pracowników obowiązek informacyjny (art. 13–14 RODO) dotyczący danych, które od Administratora otrzymuje,</li>
-<li>przechowywać je nie dłużej, niż wymagają tego przepisy lub cel, a następnie je usunąć lub zniszczyć,</li>
-<li>nie udostępniać ich dalej, chyba że wymagają tego przepisy prawa.</li>
+<li>kwoty napiwków z karty i serwisu przypadające na poszczególnych kelnerów danego dnia,</li>
+<li>kwoty gotówki przekazane do baru i kuchni,</li>
+<li>godziny pracy personelu baru i kuchni,</li>
+<li>informacje o podziale napiwków z większych rezerwacji i o wyjątkach procentowych,</li>
+<li>grafik pracy, dyspozycyjność i dni wolne członków zespołu.</li>
 </ol></li>
+<li>Przekazywane są wyłącznie dane <strong>Użytkowników</strong> i wyłącznie w zakresie niezbędnym do rozliczeń. Nie przekazuje się danych o zdrowiu, zwolnieniach lekarskich, wynagrodzeniu zasadniczym, numerów PESEL, rachunków bankowych ani adresów zamieszkania.</li>
+<li>Pracodawca poinformuje Osoby przekazujące dane o zasadach z niniejszego paragrafu. Osoby te działają w tym zakresie na podstawie upoważnienia Administratora (Załącznik nr 2) i są zobowiązane do zachowania poufności.</li>
+<li>Przekazanie danych Administratorowi nie zastępuje dokumentacji prowadzonej przez Pracodawcę — Osoby przekazujące dane wykonują wobec Pracodawcy swoje obowiązki dokumentacyjne niezależnie od Systemu.</li>
 </ol>
-<h2>§6. Przekazywanie danych przez Pracodawcę Administratorowi</h2>
+<h2>§5. Raport miesięczny sekcji</h2>
 <ol>
-<li>Pracodawca może przekazać Administratorowi dane wymienione w Załączniku nr 2 część B, wyłącznie gdy są niezbędne do działania Systemu dla Użytkowników, którzy wyrazili na to zgodę (np. imię i nazwisko, służbowy adres e-mail, stanowisko — do założenia konta i nadania roli; stawka godzinowa — do Ewidencji godzin).</li>
-<li>Pracodawca nie przekazuje Administratorowi danych szczególnych kategorii (np. o zdrowiu, zwolnieniach lekarskich), danych o wynagrodzeniu zasadniczym wykraczających poza stawkę z ust. 1, numerów PESEL, numerów rachunków bankowych ani adresów zamieszkania pracowników.</li>
-<li>Dane pracownika, który nie założył konta lub nie wyraził zgody, nie są przekazywane ani wprowadzane do Systemu.</li>
+<li>Po zakończeniu każdego miesiąca Administrator przygotowuje dla <strong>każdej sekcji osobno</strong> Raport miesięczny zawierający: imię i nazwisko, kwoty napiwków z karty i z serwisu, kwoty należne barowi i kuchni oraz łączną kwotę napiwków każdej osoby.</li>
+<li>Raport jest udostępniany <strong>pracownikom danej sekcji</strong> uczestniczącym w podziale napiwków — kwoty w Raporcie są <strong>jawne</strong> dla tych osób, w celu umożliwienia weryfikacji rzetelności podziału. Zasady jawności, przechowywania i niszczenia wydruków określa §3 „Regulaminu podziału i rozliczania napiwków”.</li>
+<li>Raport nie zawiera innych danych osobowych (np. adresu, rachunku bankowego, danych kontaktowych) ani informacji o przyczynach zastosowanych wyjątków.</li>
+<li>Raport miesięczny <strong>nie jest przekazywany Pracodawcy</strong> przez Administratora i nie stanowi dokumentacji Pracodawcy.</li>
 </ol>
-<h2>§7. Raporty dobowe i dane firmowe Pracodawcy</h2>
+<h2>§6. Brak przekazywania danych Pracodawcy</h2>
 <ol>
-<li>Raporty dobowe z utargu (zdjęcia wydruków z kasy fiskalnej i terminala) oraz druki firmowe przygotowywane w Systemie stanowią dokumentację Pracodawcy. Administrator przechowuje je wyłącznie technicznie i nie wykorzystuje do celów własnych.</li>
-<li>Strony ustalają, czy Archiwum raportów dobowych jest włączone: [gfxfillin] (tak / nie). Gdy jest włączone, okres przechowywania wynosi [gfxfillin] miesięcy, a Pracodawca odpowiada za przechowywanie oryginalnej dokumentacji fiskalnej zgodnie z przepisami, niezależnie od Systemu.</li>
-<li>Na wniosek Pracodawcy Administrator przekazuje mu kopię raportów dobowych i druków w ciągu [gfxfillin] dni.</li>
-</ol>
-<h2>§8. Obowiązki Administratora</h2>
-<ol>
-<li>Zapewnienie bezpieczeństwa technicznego Systemu (aktualizacje, kopie zapasowe, kontrola uprawnień, szyfrowane połączenie) i zawarcie umowy powierzenia z dostawcą hostingu.</li>
-<li>Udostępnienie Polityki prywatności przed założeniem konta, zbieranie i dokumentowanie zgód Użytkowników oraz realizacja ich praw.</li>
-<li>Nadawanie uprawnień do danych innych pracowników (np. manager napiwków, rozliczający bar i kuchnię, menadżerowie grafiku) tylko osobom wskazanym przez Pracodawcę w Załączniku nr 4 i zobowiązanie ich do poufności.</li>
-<li>Powiadomienie Pracodawcy o naruszeniu ochrony danych dotyczącym pracowników restauracji lub Danych przekazanych — bez zbędnej zwłoki, nie później niż w ciągu <strong>24 godzin</strong> od jego stwierdzenia.</li>
-</ol>
-<h2>§9. Obowiązki Pracodawcy</h2>
-<ol>
-<li>Poinformowanie pracowników o istnieniu Systemu, jego dobrowolności oraz o tym, że administratorem danych w Systemie jest Administrator.</li>
-<li>Wskazanie w Załączniku nr 4 osób pełniących funkcje rozliczające i zarządcze w Systemie oraz niezwłoczne informowanie o zmianach (np. odejście pracownika — w celu odebrania uprawnień i zablokowania konta).</li>
-<li>Prowadzenie niezależnie od Systemu dokumentacji wynagrodzeń, czasu pracy i rozliczeń wymaganej przepisami — System nie zastępuje ewidencji czasu pracy prowadzonej przez pracodawcę (art. 149 Kodeksu pracy).</li>
-<li>Powiadomienie Administratora o naruszeniu dotyczącym Danych przekazanych w ciągu 24 godzin od jego stwierdzenia.</li>
+<li>Administrator <strong>nie udostępnia Pracodawcy żadnych danych</strong> przetwarzanych w Systemie — w szczególności rozliczeń, godzin pracy, grafików, wniosków, rejestru aktywności, historii zgód ani Raportów miesięcznych.</li>
+<li>Pracodawca <strong>prowadzi niezależnie własną, odrębną dokumentację</strong> wynagrodzeń, czasu pracy (art. 149 Kodeksu pracy) i rozliczeń, zgodną z przepisami, i nie opiera jej na danych z Systemu.</li>
+<li>Pracodawca nie będzie uzyskiwał danych z Systemu w inny sposób — przez korzystanie z cudzych kont, zrzuty ekranu, wydruki przekazywane nieformalnie ani polecenia wydawane Użytkownikom.</li>
+<li>Jeżeli obowiązek udostępnienia danych wynikać będzie z przepisów prawa (np. żądania uprawnionego organu), Administrator udostępni je wyłącznie temu organowi i w zakresie wymaganym przepisami.</li>
+<li>Pracownik, który w ramach swoich obowiązków przygotowuje w Systemie dokument dla Pracodawcy (np. raport dobowy z utargu w formie PDF pobranego na swoje urządzenie), przekazuje go Pracodawcy sam, jako czynność służbową — nie jest to udostępnienie danych przez Administratora.</li>
 </ol>
 [gfxpagebreak]
-<h2>§10. Zakończenie zatrudnienia Administratora</h2>
+<h2>§7. Obowiązki Administratora</h2>
+<ol>
+<li>Zapewnienie bezpieczeństwa Systemu (aktualizacje, kopie zapasowe, kontrola uprawnień, szyfrowane połączenie, rejestr aktywności z ograniczonym okresem przechowywania) oraz zawarcie umowy powierzenia z dostawcą hostingu.</li>
+<li>Udostępnienie Polityki prywatności, zbieranie i dokumentowanie zgód Użytkowników oraz realizacja ich praw (iod@gastroflowx.pl).</li>
+<li>Nadawanie uprawnień do danych innych pracowników wyłącznie osobom z Załącznika nr 2 i odbieranie ich niezwłocznie po zmianie funkcji lub ustaniu zatrudnienia.</li>
+<li>Poinformowanie Pracodawcy — bez przekazywania danych osobowych — o naruszeniu ochrony danych mogącym dotyczyć pracowników restauracji, bez zbędnej zwłoki.</li>
+</ol>
+<h2>§8. Obowiązki Pracodawcy</h2>
+<ol>
+<li>Poinformowanie pracowników o istnieniu Systemu, jego dobrowolności, o tym, że administratorem danych jest Administrator, oraz że Pracodawca nie otrzymuje danych z Systemu.</li>
+<li>Poinformowanie Osób przekazujących dane o zasadach z §4.</li>
+<li>Niezwłoczne informowanie Administratora o zmianach osób pełniących funkcje z Załącznika nr 2 oraz o ustaniu zatrudnienia Użytkownika — wyłącznie w zakresie potrzebnym do zablokowania konta i odebrania uprawnień.</li>
+</ol>
+<h2>§9. Zakończenie zatrudnienia Administratora</h2>
 <ol>
 <li>Ustanie zatrudnienia Administratora nie powoduje automatycznego rozwiązania porozumienia ani zaprzestania działania Systemu.</li>
 <li>Administrator, według własnego wyboru, może:
 <ol type="a">
-<li><strong>nadal udostępniać System</strong> restauracji — nieodpłatnie albo odpłatnie, na warunkach ustalonych w aneksie lub odrębnej umowie;</li>
-<li><strong>przekazać System i dane Pracodawcy</strong> — na podstawie odrębnej umowy, po poinformowaniu Użytkowników o zmianie administratora danych z co najmniej 30-dniowym wyprzedzeniem; Użytkownicy, którzy się nie zgodzą, mogą żądać usunięcia swoich danych przed przekazaniem;</li>
-<li><strong>usunąć System</strong> i wszystkie dane;</li>
-<li><strong>zakończyć dostęp</strong> Pracodawcy i pracowników, archiwizując dane wyłącznie na potrzeby ewentualnych roszczeń, przez okres wskazany w Polityce prywatności.</li>
+<li><strong>nadal udostępniać System</strong> pracownikom restauracji na dotychczasowych zasadach;</li>
+<li><strong>usunąć System</strong> i wszystkie przetwarzane w nim dane;</li>
+<li><strong>zakończyć dostęp</strong> pracowników do Systemu i zarchiwizować dane wyłącznie na potrzeby wyjaśnienia ewentualnych pytań lub roszczeń dotyczących wcześniejszych rozliczeń, przez okres wskazany w Polityce prywatności, a następnie je usunąć.</li>
 </ol></li>
-<li>Administrator informuje Pracodawcę o wybranej opcji najpóźniej w dniu ustania zatrudnienia.</li>
-<li>Niezależnie od wybranej opcji, na wniosek złożony w terminie [gfxfillin] dni od ustania zatrudnienia, Administrator przekazuje Pracodawcy dane z Załącznika nr 2 część A za okres do dnia ustania zatrudnienia, przed ich ewentualnym usunięciem.</li>
+<li>Administrator informuje Pracodawcę i Użytkowników o wybranej opcji najpóźniej w dniu ustania zatrudnienia. Użytkownicy mogą przed zamknięciem Systemu pobrać własne raporty (PDF).</li>
+<li>Żadna z opcji nie obejmuje przekazania danych Pracodawcy, chyba że Strony zawrą odrębną umowę, a Użytkownicy zostaną o tym poinformowani z co najmniej 30-dniowym wyprzedzeniem i będą mogli żądać wcześniejszego usunięcia swoich danych.</li>
 </ol>
-<h2>§11. Czas trwania i rozwiązanie</h2>
+<h2>§10. Czas trwania i rozwiązanie</h2>
 <ol>
-<li>Porozumienie zawarto na czas nieokreślony. Każda Strona może je rozwiązać z [gfxfillin]-dniowym okresem wypowiedzenia, w formie pisemnej lub elektronicznej.</li>
-<li>Po rozwiązaniu porozumienia stosuje się odpowiednio §10 ust. 2–4.</li>
-<li>Obowiązki dotyczące poufności i ochrony Danych przekazanych obowiązują także po rozwiązaniu porozumienia.</li>
+<li>Porozumienie zawarto na czas nieokreślony. Każda Strona może je rozwiązać z [gfxfillin width="60"]-dniowym okresem wypowiedzenia, w formie pisemnej lub elektronicznej.</li>
+<li>Po rozwiązaniu porozumienia stosuje się odpowiednio §9 ust. 2–4.</li>
+<li>Obowiązki dotyczące poufności i ochrony danych obowiązują także po rozwiązaniu porozumienia.</li>
 </ol>
-<h2>§12. Postanowienia końcowe</h2>
+<h2>§11. Postanowienia końcowe</h2>
 <ol>
 <li>Zmiany porozumienia wymagają formy pisemnej lub elektronicznej (e-mail z potwierdzeniem) pod rygorem nieważności.</li>
+<li>Porozumienie nie jest umową powierzenia przetwarzania (art. 28 RODO) ani uzgodnieniem współadministratorów (art. 26 RODO).</li>
 <li>W sprawach nieuregulowanych stosuje się przepisy Kodeksu cywilnego, RODO, ustawy o ochronie danych osobowych oraz Kodeksu pracy.</li>
-<li>Porozumienie sporządzono w dwóch jednobrzmiących egzemplarzach, po jednym dla każdej Strony (lub w formie elektronicznej za obustronnym potwierdzeniem).</li>
-<li>Załączniki stanowią integralną część porozumienia.</li>
+<li>Porozumienie sporządzono w dwóch jednobrzmiących egzemplarzach, po jednym dla każdej Strony. Załączniki stanowią jego integralną część.</li>
 </ol>
 [gfxsigtable label1="Podpis Pracodawcy" label2="Podpis Administratora"]
 [gfxpagebreak]
@@ -1080,52 +1126,27 @@ GFXDOC_SEED,
 <tr><th style="width:30%;">Moduł</th><th>Zakres</th><th style="width:20%;">Używany od (data) / nieużywany</th></tr>
 <tr><td>Panel Pracownika (Hub)</td><td>Logowanie, konta, zgody, urodziny, powiadomienia, aplikacja PWA</td><td>[gfxfillin width="110"]</td></tr>
 <tr><td>Grafik Pracy</td><td>Zmiany, dyspozycyjność, offy, zamiany</td><td>[gfxfillin width="110"]</td></tr>
-<tr><td>System Napiwków</td><td>Rozliczanie napiwków karta / serwis / gotówka</td><td>[gfxfillin width="110"]</td></tr>
-<tr><td>Ewidencja Godzin</td><td>Godziny pracy, stawki, zarobek</td><td>[gfxfillin width="110"]</td></tr>
+<tr><td>System Napiwków</td><td>Rozliczanie napiwków karta / serwis / gotówka, raport miesięczny</td><td>[gfxfillin width="110"]</td></tr>
+<tr><td>Ewidencja Godzin (+ łącznik z Grafikiem)</td><td>Godziny pracy, stawki, zarobek</td><td>[gfxfillin width="110"]</td></tr>
 <tr><td>Lunch, Menu, Kolorowanki</td><td>Menu lunchowe, karta dań, materiały dla dzieci</td><td>[gfxfillin width="110"]</td></tr>
 <tr><td>Pliki</td><td>Biblioteka druków (HACCP, listy obowiązków)</td><td>[gfxfillin width="110"]</td></tr>
 <tr><td>Dokumenty (raporty dobowe)</td><td>Raporty z kasy fiskalnej i terminala</td><td>[gfxfillin width="110"]</td></tr>
 <tr><td>Karty Dostępu</td><td>Karty z kodami QR, listy pracowników</td><td>[gfxfillin width="110"]</td></tr>
+<tr><td>Rejestr Aktywności</td><td>Logowania, sesje, odwiedzane strony, IP — bezpieczeństwo</td><td>[gfxfillin width="110"]</td></tr>
 </table>
-<h2>Załącznik nr 2 — Zakres danych przekazywanych</h2>
-<h3>A. Z Systemu do Pracodawcy</h3>
+<h2>Załącznik nr 2 — Osoby przekazujące dane i osoby z uprawnieniami</h2>
 <table class="gfxdoc-table">
-<tr><th style="width:34%;">Dane</th><th>Cel</th><th style="width:22%;">Tryb / termin</th></tr>
-<tr><td>Miesięczne zestawienie napiwków (imię i nazwisko, karta, serwis, gotówka, pule bar/kuchnia, wypłata)</td><td>Rozliczenie i wypłata napiwków, rozliczenia podatkowe</td><td>[gfxfillin width="110"]</td></tr>
-<tr><td>Zestawienie godzin z Ewidencji i Napiwków (imię i nazwisko, dni, godziny)</td><td>Weryfikacja rozliczeń — pomocniczo wobec ewidencji czasu pracy Pracodawcy</td><td>[gfxfillin width="110"]</td></tr>
-<tr><td>Opublikowany grafik (PDF)</td><td>Organizacja pracy</td><td>[gfxfillin width="110"]</td></tr>
-<tr><td>Raporty dobowe z utargu (PDF)</td><td>Dokumentacja sprzedaży</td><td>[gfxfillin width="110"]</td></tr>
-<tr><td>Informacja o stosowaniu ulgi „do 26 lat” (tak / nie, data końca)</td><td>Poprawne rozliczenie podatku od napiwków</td><td>na wniosek</td></tr>
+<tr><th style="width:26%;">Imię i nazwisko</th><th>Funkcja</th><th style="width:26%;">Jakie dane przekazuje / wprowadza</th><th style="width:13%;">Od</th><th style="width:13%;">Podpis</th></tr>
+<tr><td> </td><td>Kierownik zmiany</td><td>Napiwki z karty i serwisu kelnerów</td><td> </td><td> </td></tr>
+<tr><td> </td><td>Kierownik zmiany</td><td>Napiwki z karty i serwisu kelnerów</td><td> </td><td> </td></tr>
+<tr><td> </td><td>Manager napiwków (<code>manager</code>)</td><td>Karta i serwis kelnerów, wyjątki</td><td> </td><td> </td></tr>
+<tr><td> </td><td>Admin Bar (<code>admin_bar</code>)</td><td>Godziny baru, gotówka, serwis</td><td> </td><td> </td></tr>
+<tr><td> </td><td>Admin Kuchnia (<code>admin_kuchnia</code>)</td><td>Godziny kuchni, gotówka, serwis</td><td> </td><td> </td></tr>
+<tr><td> </td><td>Szef Kuchni (<code>rs_chef_manager</code>)</td><td>Grafik kuchni</td><td> </td><td> </td></tr>
+<tr><td> </td><td>Menadżer Restauracji (<code>rs_restaurant_manager</code>)</td><td>Grafik sali i baru</td><td> </td><td> </td></tr>
 </table>
-<h3>B. Od Pracodawcy do Administratora</h3>
-<table class="gfxdoc-table">
-<tr><th style="width:34%;">Dane</th><th>Cel</th></tr>
-<tr><td>Imię i nazwisko, adres e-mail, stanowisko / dział</td><td>Założenie konta i nadanie roli (tylko za zgodą pracownika)</td></tr>
-<tr><td>Stawka godzinowa (jeśli Ewidencja Godzin ma liczyć zarobek)</td><td>Wyliczenie zarobku w Ewidencji Godzin</td></tr>
-<tr><td>Informacja o zakończeniu zatrudnienia</td><td>Zablokowanie konta, odebranie uprawnień</td></tr>
-<tr><td>Wskazanie osób funkcyjnych (Załącznik nr 4)</td><td>Nadanie uprawnień rozliczających i zarządczych</td></tr>
-</table>
-<h2>Załącznik nr 3 — Rejestr przekazań danych</h2>
-<table class="gfxdoc-table">
-<tr><th style="width:14%;">Data</th><th>Zakres danych</th><th style="width:16%;">Kierunek</th><th style="width:18%;">Odbiorca</th><th style="width:16%;">Forma</th></tr>
-<tr><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-<tr><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-<tr><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-<tr><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-<tr><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-<tr><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-</table>
-<h2>Załącznik nr 4 — Osoby z uprawnieniami do danych innych pracowników</h2>
-<table class="gfxdoc-table">
-<tr><th style="width:30%;">Imię i nazwisko</th><th>Funkcja w Systemie (rola)</th><th style="width:16%;">Od</th><th style="width:16%;">Do</th></tr>
-<tr><td> </td><td>Manager napiwków (<code>manager</code>)</td><td> </td><td> </td></tr>
-<tr><td> </td><td>Admin Bar (<code>admin_bar</code>)</td><td> </td><td> </td></tr>
-<tr><td> </td><td>Admin Kuchnia (<code>admin_kuchnia</code>)</td><td> </td><td> </td></tr>
-<tr><td> </td><td>Szef Kuchni (<code>rs_chef_manager</code>)</td><td> </td><td> </td></tr>
-<tr><td> </td><td>Menadżer Restauracji (<code>rs_restaurant_manager</code>)</td><td> </td><td> </td></tr>
-<tr><td> </td><td>Zarządzanie Ewidencją Godzin</td><td> </td><td> </td></tr>
-</table>
-[gfxnote]Wzór ma charakter pomocniczy i nie zastępuje porady prawnej. Przed podpisaniem zaleca się konsultację z prawnikiem — w szczególności w zakresie roli Stron jako administratorów danych, zasad przekazywania danych o napiwkach i godzinach pracy oraz korzystania z prywatnej infrastruktury pracownika do celów związanych z pracą.[/gfxnote]
+<p class="note">Podpis w Załączniku nr 2 oznacza zobowiązanie do zachowania poufności przekazywanych i wprowadzanych danych oraz wykorzystywania ich wyłącznie do rozliczeń w Systemie.</p>
+[gfxnote]Wzór ma charakter pomocniczy i nie zastępuje porady prawnej. Przed podpisaniem zaleca się konsultację z prawnikiem — w szczególności w zakresie przekazywania przez kierowników informacji o napiwkach innych pracowników oraz korzystania z prywatnej infrastruktury pracownika do celów związanych z pracą.[/gfxnote]
 GFXDOC_SEED,
 		),
 	);
