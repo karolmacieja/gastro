@@ -28,6 +28,19 @@ class EHTT_DB {
 		return $wpdb->prefix . 'ehtt_tips';
 	}
 
+	/** Informacyjne wpisy kelnera: napiwki z gotówki i premia (od 1.2.0). */
+	public static function table_extras() {
+		global $wpdb;
+		return $wpdb->prefix . 'ehtt_extras';
+	}
+
+	/** Tworzy brakujące tabele po aktualizacji wtyczki (bez ponownej aktywacji). */
+	public static function maybe_upgrade() {
+		if ( get_option( 'ehtt_db_version' ) !== EHTT_DB_VERSION ) {
+			self::create_tables();
+		}
+	}
+
 	/**
 	 * Tworzy wszystkie wymagane tabele (idempotentnie, przez dbDelta).
 	 */
@@ -41,6 +54,7 @@ class EHTT_DB {
 		$rates   = self::table_rate_overrides();
 		$sched   = self::table_schedule();
 		$tips    = self::table_tips();
+		$extras  = self::table_extras();
 
 		$sql = "CREATE TABLE {$entries} (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -86,6 +100,17 @@ class EHTT_DB {
 			amount DECIMAL(10,2) NOT NULL DEFAULT 0,
 			PRIMARY KEY  (id),
 			UNIQUE KEY user_date (user_id, tip_date)
+		) {$charset_collate};
+
+		CREATE TABLE {$extras} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			user_id BIGINT UNSIGNED NOT NULL,
+			extra_date DATE NOT NULL,
+			cash DECIMAL(10,2) NULL,
+			bonus DECIMAL(10,2) NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY user_date (user_id, extra_date)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

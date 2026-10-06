@@ -89,6 +89,12 @@ class EHTT_REST {
 			'permission_callback' => array( __CLASS__, 'permission_manage' ),
 		) );
 
+		register_rest_route( self::NS, '/extras', array(
+			'methods'             => 'POST',
+			'callback'            => array( __CLASS__, 'save_extras' ),
+			'permission_callback' => array( __CLASS__, 'permission_logged_in' ),
+		) );
+
 		register_rest_route( self::NS, '/manual-tips', array(
 			'methods'             => 'POST',
 			'callback'            => array( __CLASS__, 'set_manual_tips' ),
@@ -138,7 +144,7 @@ class EHTT_REST {
 	}
 
 	public static function update_settings( WP_REST_Request $request ) {
-		$allowed = array( 'global_hourly_rate', 'round_minutes', 'kitchen_deduction_pct', 'bar_deduction_pct', 'currency', 'tips_payment_method' );
+		$allowed = array( 'global_hourly_rate', 'round_minutes', 'kitchen_deduction_pct', 'bar_deduction_pct', 'currency' );
 		$payload = array();
 		foreach ( $allowed as $key ) {
 			if ( $request->has_param( $key ) ) {
@@ -203,6 +209,8 @@ class EHTT_REST {
 			'total_earnings'   => $total_earnings,
 			'note'             => $entry ? $entry['note'] : '',
 			'tips'             => $tip_breakdown,
+			'is_waiter'        => EHTT_Integrations::is_waiter( $user_id ),
+			'transfer_amount'  => round( $hours_earnings + $tip_breakdown['transfer'], 2 ),
 		) );
 	}
 
@@ -308,13 +316,20 @@ class EHTT_REST {
 
 		$days = array();
 		$totals = array(
-			'hours'          => 0.0,
-			'hours_earnings' => 0.0,
-			'tips_gross'     => 0.0,
-			'tips_tax'       => 0.0,
-			'tips_kitchen'   => 0.0,
-			'tips_bar'       => 0.0,
-			'tips_net'       => 0.0,
+			'hours'           => 0.0,
+			'hours_earnings'  => 0.0,
+			'card'            => 0.0,
+			'service'         => 0.0,
+			'cash'            => 0.0,
+			'cash_given'      => 0.0,
+			'cash_net'        => 0.0,
+			'bonus'           => 0.0,
+			'tips_tax'        => 0.0,
+			'tips_bar'        => 0.0,
+			'tips_kitchen'    => 0.0,
+			'settlement_net'  => 0.0,
+			'tips_gross'      => 0.0,
+			'tips_net'        => 0.0,
 		);
 
 		for ( $d = 1; $d <= $days_in_month; $d++ ) {
@@ -340,10 +355,13 @@ class EHTT_REST {
 
 			$totals['hours']          += $hours;
 			$totals['hours_earnings'] += $hours_earnings;
-			$totals['tips_gross']     += $tip_breakdown['gross'];
+			foreach ( array( 'card', 'service', 'cash', 'cash_given', 'cash_net', 'bonus', 'settlement_net' ) as $k ) {
+				$totals[ $k ] += $tip_breakdown[ $k ];
+			}
 			$totals['tips_tax']       += $tip_breakdown['tax'];
-			$totals['tips_kitchen']   += $tip_breakdown['kitchen_cut'];
 			$totals['tips_bar']       += $tip_breakdown['bar_cut'];
+			$totals['tips_kitchen']   += $tip_breakdown['kitchen_cut'];
+			$totals['tips_gross']     += $tip_breakdown['gross'];
 			$totals['tips_net']       += $tip_breakdown['net'];
 		}
 
@@ -354,21 +372,17 @@ class EHTT_REST {
 		$totals['hours_formatted'] = EHTT_Helpers::format_hours( $totals['hours'] );
 		$totals['total_earnings']  = round( $totals['hours_earnings'] + $totals['tips_net'], 2 );
 
-		// Wysokość przelewu na konto vs wypłata w gotówce (napiwki), zależnie od ustawień.
-		if ( 'transfer' === $settings['tips_payment_method'] ) {
-			$totals['transfer_amount'] = round( $totals['hours_earnings'] + $totals['tips_net'], 2 );
-			$totals['cash_amount']     = 0.0;
-		} else {
-			$totals['transfer_amount'] = $totals['hours_earnings'];
-			$totals['cash_amount']     = $totals['tips_net'];
-		}
+		// Przelew: godziny + karta + serwis (brutto) + premia. Gotówka poza przelewem.
+		$totals['transfer_amount'] = round( $totals['hours_earnings'] + $totals['card'] + $totals['service'] + $totals['bonus'], 2 );
+		$totals['cash_amount']     = round( $totals['cash_net'], 2 );
 
 		return rest_ensure_response( array(
 			'year'    => $year,
 			'month'   => $month,
 			'user_id' => $user_id,
-			'days'    => $days,
-			'totals'  => $totals,
+			'days'      => $days,
+			'totals'    => $totals,
+			'is_waiter' => EHTT_Integrations::is_waiter( $user_id ),
 		) );
 	}
 
@@ -424,6 +438,38 @@ class EHTT_REST {
 		// Pusta godzina rozpoczęcia = usunięcie ręcznej podpowiedzi (wraca Grafik).
 		EHTT_Integrations::set_manual_schedule( $user_id, $date, $start_time ? $start_time . ':00' : null, $end_time ? $end_time . ':00' : null );
 		return rest_ensure_response( array( 'saved' => true ) );
+	}
+
+	/**
+	 * Informacyjne wpisy kelnera (gotówka, premia). Pracownik zapisuje swoje,
+	 * osoba zarządzająca — wybranego pracownika. Tylko dla roli „kelner”.
+	 */
+	public static function save_extras( WP_REST_Request $request ) {
+		$date = sanitize_text_field( $request->get_param( 'date' ) );
+		if ( ! self::valid_date( $date ) ) {
+			return new WP_Error( 'ehtt_invalid_date', 'Nieprawidłowy format daty (YYYY-MM-DD).', array( 'status' => 400 ) );
+		}
+		$user_id = self::resolve_target_user_id( $request );
+		if ( ! EHTT_Integrations::is_waiter( $user_id ) ) {
+			return new WP_Error( 'ehtt_not_waiter', 'Gotówkę i premię zapisuje się tylko dla kelnerów.', array( 'status' => 403 ) );
+		}
+
+		$values = array();
+		foreach ( array( 'cash', 'bonus' ) as $key ) {
+			$raw = $request->get_param( $key );
+			if ( null === $raw || '' === $raw ) {
+				$values[ $key ] = null;
+				continue;
+			}
+			$val = round( (float) str_replace( ',', '.', (string) $raw ), 2 );
+			if ( $val < 0 || $val > 100000 ) {
+				return new WP_Error( 'ehtt_invalid_amount', 'Nieprawidłowa kwota.', array( 'status' => 400 ) );
+			}
+			$values[ $key ] = $val;
+		}
+
+		EHTT_Integrations::set_extras( $user_id, $date, $values['cash'], $values['bonus'] );
+		return self::get_day( $request );
 	}
 
 	public static function set_manual_tips( WP_REST_Request $request ) {

@@ -124,19 +124,50 @@
 							<div class="ehtt-val">{{ moneyFmt(computedHoursEarnings) }}</div>
 						</div>
 						<div class="ehtt-stat-card">
-							<div class="ehtt-lbl">Napiwki netto (do wypłaty)</div>
-							<div class="ehtt-val">{{ moneyFmt(day.tips.net) }}</div>
-							<div class="ehtt-sub">Brutto: {{ moneyFmt(day.tips.gross) }}</div>
-							<div class="ehtt-sub" v-if="day.tips.tax > 0">Podatek: -{{ moneyFmt(day.tips.tax) }}</div>
-							<div class="ehtt-sub" v-if="day.tips.bar_cut > 0 || day.tips.kitchen_cut > 0">Bar: -{{ moneyFmt(day.tips.bar_cut) }} · Kuchnia: -{{ moneyFmt(day.tips.kitchen_cut) }}</div>
-							<div class="ehtt-sub" v-if="day.tips.share > 0 && day.tips.gross === day.tips.share">Udział z puli działu (bez odliczeń)</div>
-							<div class="ehtt-sub">{{ tipsSourceLabel }}</div>
+							<div class="ehtt-lbl">Przelew (brutto)</div>
+							<div class="ehtt-val">{{ moneyFmt(computedTransfer) }}</div>
+							<div class="ehtt-sub">Godziny + karta + serwis + premia</div>
 						</div>
 						<div class="ehtt-stat-card ehtt-accent">
-							<div class="ehtt-lbl">Łączny zarobek</div>
+							<div class="ehtt-lbl">Łączny zarobek (netto)</div>
 							<div class="ehtt-val">{{ moneyFmt(computedTotalEarnings) }}</div>
-							<div class="ehtt-sub">Godziny + napiwki netto</div>
+							<div class="ehtt-sub">Po rozliczeniu przelewu + gotówka</div>
 						</div>
+					</div>
+
+					<div class="ehtt-card">
+						<h3>Napiwki dnia</h3>
+						<div class="ehtt-row"><span class="ehtt-row-name">Karta (brutto)</span><span>{{ moneyFmt(day.tips.card) }}</span></div>
+						<div class="ehtt-row"><span class="ehtt-row-name">Serwis (brutto)</span><span>{{ moneyFmt(day.tips.service) }}</span></div>
+						<div class="ehtt-row"><span class="ehtt-row-name">Gotówka <span class="ehtt-muted">· {{ cashSourceLabel }}</span></span><span>{{ moneyFmt(day.tips.cash) }}</span></div>
+						<div class="ehtt-row" v-if="day.tips.cash_given > 0"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— oddane do baru i kuchni</span><span>-{{ moneyFmt(day.tips.cash_given) }}</span></div>
+						<div class="ehtt-row" v-if="day.tips.bonus > 0"><span class="ehtt-row-name">Premia</span><span>{{ moneyFmt(day.tips.bonus) }}</span></div>
+						<p class="ehtt-muted" style="margin-top:8px;">{{ tipsSourceLabel }}. Karta, serwis i premia trafiają do przelewu; gotówka nie.</p>
+						<template v-if="day.tips.settlement_gross > 0">
+							<h3 style="margin-top:16px;">Rozliczenie karty i serwisu po przelewie (informacyjnie)</h3>
+							<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Karta + serwis brutto</span><span>{{ moneyFmt(day.tips.settlement_gross) }}</span></div>
+							<div class="ehtt-row" v-if="day.tips.tax > 0"><span class="ehtt-row-name ehtt-row-name-muted">— podatek</span><span>-{{ moneyFmt(day.tips.tax) }}</span></div>
+							<div class="ehtt-row" v-if="day.tips.bar_cut > 0"><span class="ehtt-row-name ehtt-row-name-muted">— dla baru</span><span>-{{ moneyFmt(day.tips.bar_cut) }}</span></div>
+							<div class="ehtt-row" v-if="day.tips.kitchen_cut > 0"><span class="ehtt-row-name ehtt-row-name-muted">— dla kuchni</span><span>-{{ moneyFmt(day.tips.kitchen_cut) }}</span></div>
+							<div class="ehtt-total ehtt-strong"><span>Karta + serwis netto</span><span>{{ moneyFmt(day.tips.settlement_net) }}</span></div>
+						</template>
+					</div>
+
+					<div v-if="day.is_waiter" class="ehtt-card">
+						<h3>Moje wpisy (kelner) — informacyjnie</h3>
+						<div class="ehtt-grid">
+							<div>
+								<label class="ehtt-field-label">Napiwki z gotówki (zł)</label>
+								<input type="number" step="0.01" min="0" v-model="cashInput" placeholder="np. 80" />
+							</div>
+							<div>
+								<label class="ehtt-field-label">Premia (zł)</label>
+								<input type="number" step="0.01" min="0" v-model="bonusInput" placeholder="np. 50" />
+							</div>
+						</div>
+						<p class="ehtt-muted" v-if="day.tips.cash_manual_ignored">W module Napiwków jest już gotówka z tego dnia — Twój wpis gotówki ({{ moneyFmt(day.tips.cash_manual) }}) nie jest liczony w podsumowaniu.</p>
+						<p class="ehtt-muted">Z gotówki i premii nic nie oddajesz do baru ani kuchni. Premia wchodzi do przelewu, gotówka nie. Puste pole = brak wpisu.</p>
+						<button class="ehtt-save ehtt-secondary ehtt-inline" @click="saveExtras" :disabled="saving">Zapisz gotówkę i premię</button>
 					</div>
 
 					<div class="ehtt-card">
@@ -163,7 +194,7 @@
 								<button class="ehtt-save ehtt-secondary ehtt-inline" @click="saveRateOverride">Zapisz stawkę dnia</button>
 							</div>
 							<div>
-								<label class="ehtt-field-label">Ręczne napiwki brutto (zastępują dane z Napiwków; puste = usuń)</label>
+								<label class="ehtt-field-label">Ręczne napiwki karta + serwis brutto (zastępują dane z Napiwków; puste = usuń)</label>
 								<input type="number" step="0.5" v-model="manualTipsInput" placeholder="np. 120" />
 								<button class="ehtt-save ehtt-secondary ehtt-inline" @click="saveManualTips">Zapisz napiwki</button>
 							</div>
@@ -192,6 +223,8 @@
 			const rateOverrideInput = ref( '' );
 			const manualTipsInput = ref( '' );
 			const manualStartInput = ref( '' );
+			const cashInput = ref( '' );
+			const bonusInput = ref( '' );
 			const manualEndInput = ref( '' );
 			const roundMinutes = ( window.EHTT_SETTINGS && window.EHTT_SETTINGS.round_minutes ) || 15;
 
@@ -205,14 +238,25 @@
 				hours_earnings: 0,
 				total_earnings: 0,
 				entry_exists: false,
-				tips: { gross: 0, tax: 0, kitchen_cut: 0, bar_cut: 0, net: 0, share: 0, source: null },
+				is_waiter: false,
+				tips: {
+					card: 0, service: 0, cash: 0, cash_given: 0, cash_net: 0, bonus: 0, tax: 0,
+					bar_cut: 0, kitchen_cut: 0, settlement_gross: 0, settlement_net: 0,
+					transfer: 0, gross: 0, net: 0, source: null, cash_source: null,
+					cash_manual: null, cash_manual_ignored: false,
+				},
 			} );
 
 			const sourceLabel = computed( () => day.suggested_source === 'manual' ? 'Kierownik' : 'Grafik' );
 			const tipsSourceLabel = computed( () => {
-				if ( day.tips.source === 'napiwki' ) return 'Źródło: moduł Napiwki';
-				if ( day.tips.source === 'manual' ) return 'Źródło: wpis kierownika (odliczenia z ustawień)';
-				return 'Brak napiwków w tym dniu';
+				if ( day.tips.source === 'napiwki' ) return 'Karta i serwis: moduł Napiwki';
+				if ( day.tips.source === 'manual' ) return 'Karta i serwis: wpis kierownika (odliczenia z ustawień)';
+				return 'Brak napiwków z karty i serwisu';
+			} );
+			const cashSourceLabel = computed( () => {
+				if ( day.tips.cash_source === 'napiwki' ) return 'z modułu Napiwki';
+				if ( day.tips.cash_source === 'kelner' ) return 'Twój wpis';
+				return 'brak';
 			} );
 
 			async function load() {
@@ -228,6 +272,8 @@
 					note.value = data.note || '';
 					rateOverrideInput.value = '';
 					manualTipsInput.value = '';
+					cashInput.value = data.tips && data.tips.cash_manual !== null ? data.tips.cash_manual : '';
+					bonusInput.value = data.tips && data.tips.bonus ? data.tips.bonus : '';
 					manualStartInput.value = day.suggested_source === 'manual' ? ( data.suggested_start || '' ) : '';
 					manualEndInput.value = day.suggested_source === 'manual' ? ( data.suggested_end || '' ) : '';
 				} catch ( e ) {
@@ -279,6 +325,34 @@
 			const computedTotalEarnings = computed( () => {
 				return Math.round( ( computedHoursEarnings.value + ( day.tips.net || 0 ) ) * 100 ) / 100;
 			} );
+
+			const computedTransfer = computed( () => {
+				return Math.round( ( computedHoursEarnings.value + ( day.tips.transfer || 0 ) ) * 100 ) / 100;
+			} );
+
+			async function saveExtras() {
+				saving.value = true;
+				errorMsg.value = '';
+				successMsg.value = '';
+				try {
+					const data = await api( '/extras', {
+						method: 'POST',
+						body: {
+							date: localDate.value,
+							user_id: props.userId,
+							cash: cashInput.value === '' ? null : cashInput.value,
+							bonus: bonusInput.value === '' ? null : bonusInput.value,
+						},
+					} );
+					Object.assign( day, data );
+					successMsg.value = 'Zapisano gotówkę i premię.';
+					emit( 'saved' );
+				} catch ( e ) {
+					errorMsg.value = e.message;
+				} finally {
+					saving.value = false;
+				}
+			}
 
 			async function save() {
 				saving.value = true;
@@ -377,6 +451,7 @@
 				save, remove, moneyFmt, onTimeChange, shiftDay,
 				rateOverrideInput, manualTipsInput, saveRateOverride, saveManualTips, load,
 				manualStartInput, manualEndInput, saveManualSchedule, sourceLabel, tipsSourceLabel,
+				cashInput, bonusInput, saveExtras, computedTransfer, cashSourceLabel,
 			};
 		},
 	};
@@ -412,8 +487,30 @@
 							>
 								<div class="ehtt-num">{{ cell.day }}</div>
 								<div class="ehtt-meta" v-if="cell.has_entry">{{ cell.hours_formatted }}<br />{{ moneyFmt(cell.hours_earnings) }}</div>
-								<div class="ehtt-tip-chip" v-if="cell.tips.gross > 0" :title="'Brutto ' + moneyFmt(cell.tips.gross)">+{{ moneyFmt(cell.tips.net) }}</div>
+								<div class="ehtt-tip-chip" v-if="cell.tips.gross > 0"
+									:title="'Karta ' + moneyFmt(cell.tips.card) + ' · Serwis ' + moneyFmt(cell.tips.service) + ' · Gotówka ' + moneyFmt(cell.tips.cash) + ' · Premia ' + moneyFmt(cell.tips.bonus)">+{{ moneyFmt(cell.tips.gross) }}</div>
 							</div>
+						</div>
+					</div>
+
+					<div class="ehtt-card" v-if="activeDays.length">
+						<h3>Dzień po dniu</h3>
+						<div class="ehtt-table-wrap">
+							<table class="ehtt-table">
+								<thead><tr><th>Dzień</th><th>Godz.</th><th>Zarobek</th><th>Karta</th><th>Serwis</th><th>Gotówka</th><th>Premia</th></tr></thead>
+								<tbody>
+									<tr v-for="c in activeDays" :key="c.date" @click="$emit('pick-day', c.date)">
+										<td>{{ c.day }}</td>
+										<td>{{ c.has_entry ? c.hours_formatted : '—' }}</td>
+										<td>{{ moneyFmt(c.hours_earnings) }}</td>
+										<td>{{ moneyFmt(c.tips.card) }}</td>
+										<td>{{ moneyFmt(c.tips.service) }}</td>
+										<td>{{ moneyFmt(c.tips.cash) }}</td>
+										<td>{{ moneyFmt(c.tips.bonus) }}</td>
+									</tr>
+								</tbody>
+								<tfoot><tr><th>Suma</th><th>{{ totals.hours_formatted }}</th><th>{{ moneyFmt(totals.hours_earnings) }}</th><th>{{ moneyFmt(totals.card) }}</th><th>{{ moneyFmt(totals.service) }}</th><th>{{ moneyFmt(totals.cash) }}</th><th>{{ moneyFmt(totals.bonus) }}</th></tr></tfoot>
+							</table>
 						</div>
 					</div>
 
@@ -421,14 +518,23 @@
 						<h3 style="font-size:16px;letter-spacing:normal;text-transform:none;margin-bottom:18px;">Podsumowanie miesiąca</h3>
 						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Suma godzin</span><span>{{ totals.hours_formatted }}</span></div>
 						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Zarobek z godzin</span><span>{{ moneyFmt(totals.hours_earnings) }}</span></div>
-						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Napiwki brutto</span><span>{{ moneyFmt(totals.tips_gross) }}</span></div>
-						<div class="ehtt-row" v-if="totals.tips_tax > 0"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— podatek</span><span>-{{ moneyFmt(totals.tips_tax) }}</span></div>
-						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— w tym na kuchnię</span><span>-{{ moneyFmt(totals.tips_kitchen) }}</span></div>
-						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— w tym na bar</span><span>-{{ moneyFmt(totals.tips_bar) }}</span></div>
-						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Napiwki netto (do ręki)</span><span>{{ moneyFmt(totals.tips_net) }}</span></div>
-						<div class="ehtt-total ehtt-strong"><span>Łączny zarobek</span><span>{{ moneyFmt(totals.total_earnings) }}</span></div>
-						<div class="ehtt-row" style="margin-top:14px;"><span class="ehtt-row-name ehtt-row-name-muted">Przelew na konto</span><span>{{ moneyFmt(totals.transfer_amount) }}</span></div>
-						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Gotówka (napiwki)</span><span>{{ moneyFmt(totals.cash_amount) }}</span></div>
+						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Napiwki z karty (brutto)</span><span>{{ moneyFmt(totals.card) }}</span></div>
+						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Napiwki z serwisu (brutto)</span><span>{{ moneyFmt(totals.service) }}</span></div>
+						<div class="ehtt-row" v-if="totals.bonus > 0"><span class="ehtt-row-name ehtt-row-name-muted">Premia</span><span>{{ moneyFmt(totals.bonus) }}</span></div>
+						<div class="ehtt-total ehtt-strong"><span>Przelew (brutto)</span><span>{{ moneyFmt(totals.transfer_amount) }}</span></div>
+
+						<div class="ehtt-row" style="margin-top:14px;"><span class="ehtt-row-name ehtt-row-name-muted">Napiwki z gotówki</span><span>{{ moneyFmt(totals.cash) }}</span></div>
+						<div class="ehtt-row" v-if="totals.cash_given > 0"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— oddane do baru i kuchni</span><span>-{{ moneyFmt(totals.cash_given) }}</span></div>
+						<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted">Gotówka do ręki (poza przelewem)</span><span>{{ moneyFmt(totals.cash_amount) }}</span></div>
+
+						<template v-if="totals.card + totals.service > 0">
+							<div class="ehtt-row" style="margin-top:14px;"><span class="ehtt-row-name ehtt-row-name-muted">Rozliczenie karty i serwisu po przelewie:</span><span></span></div>
+							<div class="ehtt-row" v-if="totals.tips_tax > 0"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— podatek</span><span>-{{ moneyFmt(totals.tips_tax) }}</span></div>
+							<div class="ehtt-row" v-if="totals.tips_bar > 0"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— dla baru</span><span>-{{ moneyFmt(totals.tips_bar) }}</span></div>
+							<div class="ehtt-row" v-if="totals.tips_kitchen > 0"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">— dla kuchni</span><span>-{{ moneyFmt(totals.tips_kitchen) }}</span></div>
+							<div class="ehtt-row"><span class="ehtt-row-name ehtt-row-name-muted" style="padding-left:14px;">= karta + serwis netto</span><span>{{ moneyFmt(totals.settlement_net) }}</span></div>
+						</template>
+						<div class="ehtt-total ehtt-strong" style="margin-top:14px;"><span>Łączny zarobek (netto)</span><span>{{ moneyFmt(totals.total_earnings) }}</span></div>
 					</div>
 				</template>
 			</div>
@@ -440,10 +546,11 @@
 			const loading = ref( true );
 			const cells = ref( [] );
 			const totals = reactive( {
-				hours_formatted: '0 h', hours_earnings: 0, tips_gross: 0, tips_tax: 0,
-				tips_kitchen: 0, tips_bar: 0, tips_net: 0, total_earnings: 0,
-				transfer_amount: 0, cash_amount: 0,
+				hours_formatted: '0 h', hours_earnings: 0, card: 0, service: 0, cash: 0, cash_given: 0,
+				cash_net: 0, bonus: 0, tips_gross: 0, tips_tax: 0, tips_kitchen: 0, tips_bar: 0,
+				settlement_net: 0, tips_net: 0, total_earnings: 0, transfer_amount: 0, cash_amount: 0,
 			} );
+			const activeDays = computed( () => cells.value.filter( ( c ) => c.has_entry || c.tips.gross > 0 ) );
 			const dow = [ 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz' ];
 			const todayIso = isoDate( today );
 
@@ -495,7 +602,7 @@
 			watch( () => props.userId, load );
 			onMounted( load );
 
-			return { dow, leadingBlanks, cells, totals, monthLabel, prevMonth, nextMonth, loading, moneyFmt, todayIso, cellClasses };
+			return { dow, leadingBlanks, cells, totals, monthLabel, prevMonth, nextMonth, loading, moneyFmt, todayIso, cellClasses, activeDays };
 		},
 	};
 
@@ -528,13 +635,6 @@
 						<div>
 							<label class="ehtt-field-label">Udział baru (%) — tylko dla napiwków wpisanych ręcznie</label>
 							<input type="number" step="0.5" v-model="form.bar_deduction_pct" />
-						</div>
-						<div>
-							<label class="ehtt-field-label">Sposób wypłaty napiwków</label>
-							<select v-model="form.tips_payment_method">
-								<option value="cash">Gotówka (osobno od przelewu)</option>
-								<option value="transfer">Przelew (łącznie z wynagrodzeniem)</option>
-							</select>
 						</div>
 						<div>
 							<label class="ehtt-field-label">Symbol waluty</label>
@@ -570,7 +670,7 @@
 		setup( props ) {
 			const form = reactive( {
 				global_hourly_rate: 30, round_minutes: 15, kitchen_deduction_pct: 3,
-				bar_deduction_pct: 3, tips_payment_method: 'cash', currency: 'zł',
+				bar_deduction_pct: 3, currency: 'zł',
 			} );
 			const saving = ref( false );
 			const msg = ref( '' );

@@ -186,3 +186,14 @@
 /* Karta podsumowania miesiąca */
 .ehtt-summary-box{ border-radius:var(--eh-radius-lg); padding:22px; background:var(--eh-surface); border:2px solid var(--eh-border-light);
 	box-shadow:0 1px 2px rgba(0,0,0,.04); }
+
+/* 1.2.0 — tabela „Dzień po dniu” i kilka chipów napiwków w komórce kalendarza */
+#ehtt-app .ehtt-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#ehtt-app .ehtt-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+#ehtt-app .ehtt-table th, #ehtt-app .ehtt-table td { padding: 8px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; }
+#ehtt-app .ehtt-table th:first-child, #ehtt-app .ehtt-table td:first-child { text-align: left; }
+#ehtt-app .ehtt-table thead th { color: #6B7280; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+#ehtt-app .ehtt-table tbody tr { cursor: pointer; }
+#ehtt-app .ehtt-table tbody tr:hover { background: #F9FAFB; }
+#ehtt-app .ehtt-table tfoot th { color: #111827; border-bottom: none; border-top: 2px solid #DBEAFE; }
+#ehtt-app .ehtt-day-cell .ehtt-tip-chip + .ehtt-tip-chip { margin-top: 2px; }

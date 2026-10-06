@@ -78,14 +78,23 @@ Godziny (podpowiedź rozpoczęcia i zakończenia):
 3. brak podpowiedzi.
 Bez zapisanego wpisu pola są od razu wypełnione podpowiedzią; pracownik może je zmienić.
 
-Napiwki (brutto → netto):
-1. ręczny wpis kierownika = kwota BRUTTO; Ewidencja odejmuje „Udział kuchni %”
-   i „Udział baru %” z ustawień,
-2. Napiwki — te same wzory co moduł Napiwków:
-   kelner: brutto = karta + serwis + gotówka 100%; minus podatek (z ulgą do 26 lat),
-   minus pula baru i kuchni (z wyjątkami procentowymi dnia) = netto (wypłata),
-   barman / kucharz / pomoc: udział z puli działu — brutto = netto,
-3. brak napiwków.
+Napiwki (od 1.2.0):
+* Karta i serwis — kwoty BRUTTO z modułu Napiwków (kelner: wpisane kwoty;
+  barman / kucharz / pomoc: udział z puli). Trafiają do PRZELEWU. Rozliczenie
+  na netto po otrzymaniu przelewu (podatek z ulgą do 26 lat, udział baru i kuchni
+  wg Napiwków, z wyjątkami procentowymi) jest pokazywane informacyjnie.
+  Ręczny wpis kierownika = karta + serwis brutto; odliczenia % z ustawień.
+* Gotówka — z modułu Napiwków (100% i kwota oddana do baru i kuchni), a gdy
+  w Napiwkach nie ma gotówki z tego dnia — informacyjny wpis kelnera.
+  Wpis kelnera jest pomijany, jeśli Napiwki mają już gotówkę z tego dnia.
+  Gotówka NIE trafia do przelewu.
+* Premia — informacyjny wpis kelnera, bez odliczeń, wchodzi do przelewu.
+* Gotówkę i premię wpisuje tylko kelner (rola „kelner”) w zakładce „Dzień”.
+* Przelew = zarobek z godzin + karta + serwis + premia (brutto).
+* Łączny zarobek (netto) = godziny + karta i serwis netto + gotówka, która
+  zostaje + premia.
+* Kalendarz: godziny, zarobek i suma napiwków dnia; tabela „Dzień po dniu”
+  (godziny, zarobek, karta, serwis, gotówka, premia) i podsumowanie miesiąca.
 Puste pole ręcznego wpisu usuwa go — wracają dane z Grafiku / Napiwków.
 
 Filtry dla programistów: ehtt_suggested_start_time, ehtt_suggested_end_time,
@@ -105,6 +114,13 @@ Domyślnie dane (wpisy godzin, stawki, napiwki) NIE są usuwane przy odinstalowa
 Aby wymusić usunięcie, zdefiniuj w wp-config.php: `define( 'EHTT_REMOVE_DATA_ON_UNINSTALL', true );`
 
 == Changelog ==
+
+= 1.2.0 =
+* Karta i serwis brutto do przelewu, rozliczenie netto po przelewie (informacyjnie).
+* Informacyjne pola kelnera: napiwki z gotówki i premia (tabela wp_ehtt_extras).
+* Tabela „Dzień po dniu” i nowe podsumowanie miesiąca (przelew, gotówka, rozliczenie).
+* Usunięte ustawienie „Sposób wypłaty napiwków” (zasady przelewu są stałe).
+* Automatyczne tworzenie nowych tabel po aktualizacji bez ponownej aktywacji.
 
 = 1.1.0 =
 * Wbudowane połączenie z Grafikiem (podpowiedź godziny rozpoczęcia i zakończenia) i Napiwkami (napiwki brutto i netto z rozbiciem na podatek, bar i kuchnię).

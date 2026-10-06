@@ -76,7 +76,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td><strong>GastroFlowx Hub</strong><br/><span class="small">gastroflowx-hub</span></td><td>Logowanie, menu, uprawnienia ról, Moje konto, Urodziny, zgody, aplikacja PWA, centralne powiadomienia push.</td><td>Strona domowa, Moje konto, Urodziny</td></tr>
 <tr><td><strong>Grafik Pracy</strong><br/><span class="small">restaurant-scheduler</span></td><td>Grafik zmian, dyspozycyjność, dni wolne (offy), zamiany, automatyczne generowanie, kalendarz iCal, PDF.</td><td>Grafik</td></tr>
 <tr><td><strong>System Napiwków</strong><br/><span class="small">system-napiwkow-spa</span></td><td>Rozliczanie napiwków z karty, serwisu i gotówki między kelnerami, barem i kuchnią; raporty miesięczne.</td><td>Napiwki</td></tr>
-<tr><td><strong>Ewidencja Godzin</strong><br/><span class="small">employee-timesheet</span></td><td>Własne godziny pracy dzień po dniu (podpowiedź z Grafiku), stawka godzinowa, napiwki brutto i netto z Napiwków, zarobek, kalendarz miesiąca.</td><td>Godziny</td></tr>
+<tr><td><strong>Ewidencja Godzin</strong><br/><span class="small">employee-timesheet</span></td><td>Własne godziny pracy dzień po dniu (podpowiedź z Grafiku), stawka godzinowa, napiwki z karty, serwisu i gotówki, premia, przelew, kalendarz miesiąca.</td><td>Godziny</td></tr>
 <tr><td><strong>Weranda Lunch</strong><br/><span class="small">weranda-lunch</span></td><td>Generator PDF codziennego menu lunchowego na szablonach graficznych.</td><td>Lunch</td></tr>
 <tr><td><strong>Menu GastroFlowX</strong><br/><span class="small">gastroflowx-menu</span></td><td>Baza dań PL/EN, kreator karty menu, „Wersje Standardowe”, PDF A4.</td><td>Menu</td></tr>
 <tr><td><strong>Weranda Kolorowanki</strong><br/><span class="small">weranda-kolorowanki</span></td><td>Biblioteka kolorowanek dla dzieci z drukiem grupowym.</td><td>Kolorowanki</td></tr>
@@ -95,7 +95,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Wspólny wygląd</strong> — wszystkie moduły używają tego samego niebieskiego motywu GastroFlowx (kolor przewodni #2563EB) i ikon Font Awesome.</li>
 </ul>
 [gfxbox color="muted"]
-<strong>Ewidencja Godzin a Grafik i Napiwki.</strong> Ewidencja Godzin (od wersji 1.1.0) ma <u>wbudowane</u> połączenie z obydwoma modułami — bez dodatkowych wtyczek. Z Grafiku <strong>podpowiada godzinę rozpoczęcia i zakończenia</strong> pracy (najwcześniejszy początek i najpóźniejszy koniec opublikowanych zmian danego dnia; wersje robocze i znaczniki „Nieobecny/Dostępny” są pomijane). Z modułu Napiwków pobiera <strong>napiwki brutto i netto</strong> z rozbiciem na podatek oraz udziały baru i kuchni — liczone tymi samymi wzorami co Napiwki, więc netto w Ewidencji równa się wypłacie dnia w Napiwkach. Ręczny wpis osoby zarządzającej Ewidencją (godziny lub napiwki brutto) ma pierwszeństwo; od ręcznej kwoty napiwków Ewidencja odejmuje procenty kuchni i baru z własnych ustawień.
+<strong>Ewidencja Godzin a Grafik i Napiwki.</strong> Ewidencja Godzin (od wersji 1.1.0) ma <u>wbudowane</u> połączenie z obydwoma modułami — bez dodatkowych wtyczek. Z Grafiku <strong>podpowiada godzinę rozpoczęcia i zakończenia</strong> pracy (najwcześniejszy początek i najpóźniejszy koniec opublikowanych zmian danego dnia; wersje robocze i znaczniki „Nieobecny/Dostępny” są pomijane). Z modułu Napiwków pobiera <strong>napiwki z karty i serwisu (brutto, do przelewu)</strong> oraz gotówkę, a rozliczenie na netto (podatek, udziały baru i kuchni — tymi samymi wzorami co Napiwki) pokazuje informacyjnie. Kelner dopisuje informacyjnie gotówkę (gdy nie ma jej w Napiwkach) i premię. Ręczny wpis osoby zarządzającej Ewidencją (godziny lub karta + serwis brutto) ma pierwszeństwo; od ręcznej kwoty napiwków Ewidencja odejmuje procenty kuchni i baru z własnych ustawień.
 [/gfxbox]
 [gfxpagebreak]
 <h2>3. Panel Pracownika (Hub) [gfxbadge]wszyscy pracownicy[/gfxbadge]</h2>
@@ -185,9 +185,11 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li>Zakładka <strong>Dzień</strong> — godzina rozpoczęcia i zakończenia pracy, zawsze zaokrąglana do 15 minut; czas pokazywany jako np. „7,5 h”; notatka.</li>
 <li><strong>Podpowiedź z Grafiku</strong> — godzina rozpoczęcia i zakończenia są wstępnie ustawiane według Twoich zmian z Grafiku; można je zmienić.</li>
 <li><strong>Stawka godzinowa</strong> — ogólna, z możliwością nadpisania dla konkretnej osoby lub dnia.</li>
-<li><strong>Napiwki dnia brutto i netto</strong> — pobierane z modułu Napiwków: brutto (karta + serwis + gotówka 100% albo udział z puli), podatek, udział baru i kuchni, netto do wypłaty. Kwotę może też wpisać ręcznie kierownik (brutto, odliczenia % z ustawień).</li>
+<li><strong>Napiwki dnia</strong> — karta i serwis <u>brutto</u> z modułu Napiwków (kelner: wpisane kwoty; bar i kuchnia: udział z puli) trafiają do przelewu; rozliczenie na netto po otrzymaniu przelewu (podatek, udział baru i kuchni) jest pokazywane informacyjnie. Gotówka (z Napiwków albo wpis kelnera) — poza przelewem.</li>
+<li><strong>Wpisy kelnera</strong> — napiwki z gotówki i premia, informacyjnie, bez odliczeń dla baru i kuchni. Wpis gotówki jest pomijany, gdy moduł Napiwków ma już gotówkę z tego dnia. Premia wchodzi do przelewu.</li>
+<li><strong>Przelew</strong> = zarobek z godzin + karta + serwis + premia (brutto); <strong>łączny zarobek netto</strong> = godziny + karta i serwis netto + gotówka, która zostaje + premia.</li>
 <li><strong>Podsumowanie dnia</strong> — zarobek z godzin, napiwki brutto/netto, kwota przelewu, gotówka po odliczeniu podziału, łączny zarobek.</li>
-<li><strong>Kalendarz i podsumowanie</strong> — siatka miesiąca z godzinami, zarobkiem i napiwkami.</li>
+<li><strong>Kalendarz i podsumowanie</strong> — siatka miesiąca z godzinami, zarobkiem i sumą napiwków dnia, tabela „Dzień po dniu” (godziny, zarobek, karta, serwis, gotówka, premia) i podsumowanie miesiąca: przelew, gotówka, rozliczenie karty i serwisu na netto.</li>
 <li>Każdy widzi i edytuje <u>wyłącznie własne</u> wpisy. Osoba z uprawnieniem <code>ehtt_manage_timesheets</code> (domyślnie administrator) widzi wszystkich, ustawia stawki, ręcznie nadpisuje podpowiedzi godzin i napiwków dnia oraz zmienia ustawienia.</li>
 </ul>
 <h2>7. Generator Menu Lunchowego [gfxbadge]rola „lunch” / administrator[/gfxbadge]</h2>
@@ -310,7 +312,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Raport miesięczny:</strong> po zakończeniu miesiąca dla każdej sekcji przygotowywany jest raport rozliczenia napiwków. Kwoty w raporcie są <strong>jawne dla wszystkich pracowników danej sekcji</strong> uczestniczących w podziale — zgodnie z §3 „Regulaminu podziału i rozliczania napiwków”.</li>
 <li><strong>Pracodawca nie otrzymuje danych z Systemu</strong> i nie ma do niego dostępu. Prowadzi własną, odrębną dokumentację wynagrodzeń i rozliczeń.</li>
 </ul>
-[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.1.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
+[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.2.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
 GFXDOC_SEED,
 		),
 		array(
@@ -406,8 +408,9 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <h3>3.3 Godziny</h3>
 <ol class="steps">
 <li>Zakładka <strong>Dzień</strong> → godzina rozpoczęcia i zakończenia są już wpisane według Twojej zmiany w Grafiku (oznaczenie „Grafik: …”). Sprawdź je, popraw, jeśli pracowałeś/pracowałaś w innych godzinach (zaokrąglają się do 15 minut), i kliknij „Zapisz dzień”.</li>
-<li>Sprawdź podsumowanie: zarobek z godzin, napiwki <strong>brutto</strong> (z rozbiciem na podatek, bar i kuchnię) i <strong>netto</strong> — netto to ta sama kwota, co Twoja wypłata dnia w Napiwkach — oraz łączny zarobek. Jeśli napiwki się nie zgadzają, zgłoś to osobie rozliczającej w Napiwkach.</li>
-<li><strong>Kalendarz i podsumowanie</strong> — cały miesiąc w jednym widoku.</li>
+<li>Sprawdź kartę „Napiwki dnia”: karta i serwis (brutto — trafiają do przelewu), gotówka i premia, a niżej informacyjne rozliczenie karty i serwisu na netto po przelewie (podatek, bar, kuchnia).</li>
+<li>W karcie „Moje wpisy (kelner)” możesz zapisać <strong>napiwki z gotówki</strong> i <strong>premię</strong> — informacyjnie, nic z nich nie oddajesz do baru ani kuchni. Jeśli gotówka z tego dnia jest już w module Napiwków, Twój wpis gotówki nie jest liczony. Premia wchodzi do przelewu, gotówka nie.</li>
+<li><strong>Kalendarz i podsumowanie</strong> — godziny i napiwki każdego dnia, tabela „Dzień po dniu” (karta, serwis, gotówka, premia) oraz podsumowanie: przelew (godziny + karta + serwis + premia), gotówka do ręki i łączny zarobek netto.</li>
 </ol>
 [gfxbox color="party"]
 <h2>4. Barman</h2>
@@ -782,7 +785,7 @@ GFXDOC_SEED,
 <tr><td>Zgody</td><td>Historia wyrażenia i wycofania zgody: data i godzina, wersja polityki, adres IP.</td><td>System, przy Twojej decyzji.</td></tr>
 <tr><td>Grafik</td><td>Zmiany (dzień, godziny, zmiana zamykająca, komentarz), dyspozycyjność i notatki, wnioski o dni wolne (daty, powód z listy, komentarz, decyzja i notatka menadżera), prośby o zamianę, uprawnienie do zamykania lokalu, status „nieaktywny”, prywatny klucz kanału kalendarza (iCal).</td><td>Ty, menadżerowie, algorytm generowania (wersje robocze).</td></tr>
 <tr><td>Napiwki</td><td>Dzienne kwoty napiwków z karty, serwisu i gotówki, przepracowane godziny, wyliczone pule i wypłaty, wyjątki procentowe, przypisanie do rezerwacji, kwoty fizycznie przekazane i różnice, data zakończenia pracy.</td><td>Ty, manager napiwków, osoby rozliczające bar i kuchnię.</td></tr>
-<tr><td>Ewidencja godzin</td><td>Godziny rozpoczęcia i zakończenia pracy, liczba godzin, stawka godzinowa i jej nadpisania, notatki, napiwki dnia, wyliczony zarobek.</td><td>Ty i osoba zarządzająca ewidencją; godziny rozpoczęcia i zakończenia podpowiadane z Grafiku, napiwki dnia (brutto i netto) pobierane z modułu Napiwków.</td></tr>
+<tr><td>Ewidencja godzin</td><td>Godziny rozpoczęcia i zakończenia pracy, liczba godzin, stawka godzinowa i jej nadpisania, notatki, napiwki dnia (karta, serwis, gotówka), informacyjne wpisy kelnera (napiwki z gotówki, premia), wyliczony przelew i zarobek.</td><td>Ty i osoba zarządzająca ewidencją; godziny rozpoczęcia i zakończenia podpowiadane z Grafiku, napiwki dnia (brutto i netto) pobierane z modułu Napiwków.</td></tr>
 <tr><td>Raporty dobowe</td><td>Kto i kiedy wygenerował raport lub dodał zdjęcie; przy włączonym Archiwum — zdjęcia wydruków z kasy i terminala (mogą zawierać np. nazwę kasjera).</td><td>Osoba tworząca raport.</td></tr>
 <tr><td>Pliki i dokumenty</td><td>Autor dokumentu w bibliotece druków.</td><td>System.</td></tr>
 <tr><td>Powiadomienia</td><td>Urządzenia z włączonymi powiadomieniami push (identyfikator urządzenia, token Firebase, data ostatniej aktywności), historia wysyłki (odbiorca, tytuł, status, ewentualny błąd), treść wysłanych e-maili.</td><td>Twoje urządzenie, System.</td></tr>

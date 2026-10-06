@@ -3,7 +3,7 @@
  * Plugin Name:       Employee Timesheet & Tips
  * Plugin URI:        https://example.com/employee-timesheet
  * Description:       Ewidencja godzin pracy pracowników (SPA na Vue 3): rejestracja godzin z zaokrągleniem do 15 minut, stawki godzinowe (ogólna + zmiana na dany dzień), integracja z grafikiem (sugerowana godzina rozpoczęcia) i z wtyczką napiwków, podsumowania wypłat oraz widok kalendarza.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Author:             Senior Full-Stack Dev
  * Text Domain:        employee-timesheet
  * Domain Path:        /languages
@@ -15,11 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Brak dostępu bezpośredniego.
 }
 
-define( 'EHTT_VERSION', '1.1.0' );
+define( 'EHTT_VERSION', '1.2.0' );
 define( 'EHTT_PLUGIN_FILE', __FILE__ );
 define( 'EHTT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EHTT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'EHTT_DB_VERSION', '1.0.0' );
+define( 'EHTT_DB_VERSION', '1.2.0' );
 
 /** Nazwa capability, którą mają administratorzy / kierownicy zmiany. */
 define( 'EHTT_MANAGE_CAP', 'ehtt_manage_timesheets' );
@@ -58,6 +58,7 @@ function ehtt_activate_plugin() {
 	flush_rewrite_rules();
 }
 register_activation_hook( __FILE__, 'ehtt_activate_plugin' );
+add_action( 'plugins_loaded', array( 'EHTT_DB', 'maybe_upgrade' ) );
 
 /**
  * Deaktywacja - nie usuwamy danych, tylko czyścimy reguły przepisywania.

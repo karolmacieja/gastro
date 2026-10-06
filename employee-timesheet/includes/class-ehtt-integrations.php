@@ -14,15 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  *      i znaczników „Nieobecny” / „Dostępny”),
  *   3. brak podpowiedzi.
  *
- * NAPIWKI (brutto → netto), kolejność źródeł:
- *   1. ręczny wpis kierownika (tabela ehtt_tips) — kwota brutto, od której
- *      Ewidencja odejmuje procenty z ustawień (kuchnia / bar),
- *   2. Napiwki — rozliczenie liczone tymi samymi wzorami co moduł Napiwków:
- *      kelner: brutto = karta + serwis + gotówka 100%, minus podatek,
- *      minus pula baru i kuchni (z wyjątkami procentowymi dnia) = netto;
- *      barman / kucharz / pomoc: udział z puli (gotówka + karta + serwis),
- *      brutto = netto, bo nic nie oddaje,
- *   3. brak napiwków.
+ * NAPIWKI — zob. get_tips_breakdown():
+ *   karta + serwis (brutto, do przelewu): ręczny wpis kierownika albo Napiwki;
+ *   rozliczenie netto po przelewie: podatek i udziały baru i kuchni wg Napiwków
+ *   (dla wpisu ręcznego — procenty z ustawień); barman / kucharz: udział z puli;
+ *   gotówka (poza przelewem): Napiwki, a gdy ich brak — wpis kelnera;
+ *   premia kelnera: do przelewu, bez odliczeń.
  *
  * Każde źródło działa niezależnie — brak Grafiku lub Napiwków wyłącza
  * tylko jego część. Filtry `ehtt_suggested_start_time`, `ehtt_suggested_end_time`
@@ -124,40 +121,73 @@ class EHTT_Integrations {
 	 * ------------------------------------------------------------- */
 
 	/**
-	 * Pełne rozliczenie napiwków osoby za dzień.
+	 * Rozliczenie napiwków osoby za dzień.
 	 *
-	 * @return array{gross:float,tax:float,bar_cut:float,kitchen_cut:float,net:float,
-	 *               source:?string,card:float,service:float,cash100:float,share:float}
+	 * Karta i serwis to kwoty BRUTTO, które trafiają do przelewu; po otrzymaniu
+	 * przelewu kelner rozlicza je na netto (podatek, udział baru i kuchni) —
+	 * Ewidencja pokazuje to rozliczenie informacyjnie (settlement_*).
+	 * Gotówka nie trafia do przelewu. Premia trafia do przelewu i nie podlega
+	 * żadnym odliczeniom. Gotówka wpisana przez kelnera jest pomijana, jeśli
+	 * na ten dzień jest już gotówka z modułu Napiwków.
+	 *
+	 * @return array<string,mixed> zob. empty_breakdown().
 	 */
 	public static function get_tips_breakdown( $user_id, $date, $settings = null ) {
 		$settings = $settings ? $settings : EHTT_Helpers::get_settings();
 		$out      = self::empty_breakdown();
 
+		// 1) Karta + serwis: ręczny wpis kierownika albo moduł Napiwków.
 		$manual = self::get_manual_tips( $user_id, $date );
 		if ( null !== $manual ) {
-			$gross              = (float) $manual;
-			$out['gross']       = $gross;
-			$out['kitchen_cut'] = round( $gross * ( (float) $settings['kitchen_deduction_pct'] / 100 ), 2 );
-			$out['bar_cut']     = round( $gross * ( (float) $settings['bar_deduction_pct'] / 100 ), 2 );
-			$out['net']         = $gross - $out['kitchen_cut'] - $out['bar_cut'];
+			$out['card']        = (float) $manual; // ręczna kwota = karta + serwis brutto
+			$out['bar_cut']     = $out['card'] * ( (float) $settings['bar_deduction_pct'] / 100 );
+			$out['kitchen_cut'] = $out['card'] * ( (float) $settings['kitchen_deduction_pct'] / 100 );
 			$out['source']      = 'manual';
 		} elseif ( self::tips_active() ) {
 			$waiter = self::waiter_tips( $user_id, $date );
-			$share  = self::staff_share( $user_id, $date );
-			if ( $waiter || null !== $share ) {
-				if ( $waiter ) {
-					foreach ( $waiter as $k => $v ) {
-						$out[ $k ] += $v;
-					}
+			$staff  = self::staff_share( $user_id, $date );
+			if ( $waiter ) {
+				foreach ( array( 'card', 'service', 'tax', 'bar_cut', 'kitchen_cut', 'cash', 'cash_given' ) as $k ) {
+					$out[ $k ] += $waiter[ $k ];
 				}
-				if ( null !== $share ) {
-					$out['share'] += $share;
-					$out['gross'] += $share;
-					$out['net']   += $share;
+				if ( $waiter['has_cash'] ) {
+					$out['cash_source'] = 'napiwki';
 				}
+			}
+			if ( $staff ) {
+				// Udział barmana / kucharza z puli — bez odliczeń.
+				$out['card']    += $staff['card'];
+				$out['service'] += $staff['service'];
+				$out['cash']    += $staff['cash'];
+				if ( $staff['cash'] > 0 ) {
+					$out['cash_source'] = 'napiwki';
+				}
+			}
+			if ( $waiter || $staff ) {
 				$out['source'] = 'napiwki';
 			}
 		}
+
+		// 2) Informacyjne wpisy kelnera: gotówka i premia.
+		$extras             = self::get_extras( $user_id, $date );
+		$out['cash_manual'] = $extras['cash'];
+		$out['bonus']       = (float) $extras['bonus'];
+		if ( null !== $extras['cash'] ) {
+			if ( 'napiwki' === $out['cash_source'] ) {
+				$out['cash_manual_ignored'] = true;
+			} else {
+				$out['cash']        += (float) $extras['cash'];
+				$out['cash_source']  = 'kelner';
+			}
+		}
+
+		// 3) Sumy.
+		$out['settlement_gross'] = $out['card'] + $out['service'];
+		$out['settlement_net']   = $out['settlement_gross'] - $out['tax'] - $out['bar_cut'] - $out['kitchen_cut'];
+		$out['cash_net']         = $out['cash'] - $out['cash_given'];
+		$out['transfer']         = $out['settlement_gross'] + $out['bonus'];
+		$out['gross']            = $out['settlement_gross'] + $out['cash'] + $out['bonus'];
+		$out['net']              = $out['settlement_net'] + $out['cash_net'] + $out['bonus'];
 
 		$out = apply_filters( 'ehtt_tips_breakdown', $out, $user_id, $date );
 		foreach ( $out as $k => $v ) {
@@ -170,21 +200,29 @@ class EHTT_Integrations {
 
 	public static function empty_breakdown() {
 		return array(
-			'gross'       => 0.0,
-			'tax'         => 0.0,
-			'bar_cut'     => 0.0,
-			'kitchen_cut' => 0.0,
-			'net'         => 0.0,
-			'source'      => null,
-			'card'        => 0.0,
-			'service'     => 0.0,
-			'cash100'     => 0.0,
-			'share'       => 0.0,
+			'source'              => null,  // napiwki | manual | null (karta + serwis)
+			'card'                => 0.0,   // brutto — do przelewu
+			'service'             => 0.0,   // brutto — do przelewu
+			'tax'                 => 0.0,   // rozliczenie po przelewie
+			'bar_cut'             => 0.0,
+			'kitchen_cut'         => 0.0,
+			'settlement_gross'    => 0.0,   // karta + serwis
+			'settlement_net'      => 0.0,   // karta + serwis po podatku i udziałach
+			'cash'                => 0.0,   // gotówka 100% (Napiwki) albo wpis kelnera
+			'cash_given'          => 0.0,   // gotówka oddana do baru i kuchni (Napiwki)
+			'cash_net'            => 0.0,   // gotówka, która zostaje
+			'cash_source'         => null,  // napiwki | kelner | null
+			'cash_manual'         => null,  // wpis kelnera (może być pominięty)
+			'cash_manual_ignored' => false,
+			'bonus'               => 0.0,   // premia — do przelewu, bez odliczeń
+			'transfer'            => 0.0,   // karta + serwis + premia (brutto)
+			'gross'               => 0.0,   // karta + serwis + gotówka + premia
+			'net'                 => 0.0,   // rozliczenie netto + gotówka netto + premia
 		);
 	}
 
 	/**
-	 * Kelner — te same wzory co snspa_get_day_data() (kelnerSelf) w Napiwkach.
+	 * Kelner — dane z Napiwków i te same wzory co snspa_get_day_data() (kelnerSelf).
 	 */
 	private static function waiter_tips( $user_id, $date ) {
 		global $wpdb;
@@ -209,22 +247,17 @@ class EHTT_Integrations {
 		$pct     = snspa_percent_from_day_map( snspa_get_day_percent_overrides( $date ), $user_id );
 		$cash100 = snspa_cash100_from_row( (float) $cash_bar, (float) $cash_ktc, $pct['card']['bar'], $pct['card']['kitchen'] );
 
-		// Karta i gotówka — procentem KARTY, serwis — procentem SERWISU.
-		$card_and_cash = $k_net + $cash100;
-		$pool_bar      = $card_and_cash * $pct['card']['bar'] + $s_net * $pct['service']['bar'];
-		$pool_ktc      = $card_and_cash * $pct['card']['kitchen'] + $s_net * $pct['service']['kitchen'];
-		$gross         = $card + $service + $cash100;
-		$tax_cut       = ( $card - $k_net ) + ( $service - $s_net );
-
 		return array(
-			'gross'       => $gross,
-			'tax'         => $tax_cut,
-			'bar_cut'     => $pool_bar,
-			'kitchen_cut' => $pool_ktc,
-			'net'         => $gross - $tax_cut - $pool_bar - $pool_ktc,
 			'card'        => $card,
 			'service'     => $service,
-			'cash100'     => $cash100,
+			'tax'         => ( $card - $k_net ) + ( $service - $s_net ),
+			// Udziały baru i kuchni z karty i serwisu (rozliczane po przelewie).
+			'bar_cut'     => $k_net * $pct['card']['bar'] + $s_net * $pct['service']['bar'],
+			'kitchen_cut' => $k_net * $pct['card']['kitchen'] + $s_net * $pct['service']['kitchen'],
+			// Gotówka: 100% i kwota fizycznie oddana do baru i kuchni.
+			'cash'        => $cash100,
+			'cash_given'  => (float) $cash_bar + (float) $cash_ktc,
+			'has_cash'    => null !== $cash_bar || null !== $cash_ktc,
 		);
 	}
 
@@ -233,19 +266,76 @@ class EHTT_Integrations {
 	 */
 	private static function staff_share( $user_id, $date ) {
 		global $wpdb;
-		$sum = $wpdb->get_var(
+		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT SUM(calc_cash + calc_card + calc_service) FROM {$wpdb->prefix}sn_staff_work WHERE user_id = %d AND date = %s",
+				"SELECT COUNT(*) AS n, SUM(calc_card) AS card, SUM(calc_service) AS service, SUM(calc_cash) AS cash
+				 FROM {$wpdb->prefix}sn_staff_work WHERE user_id = %d AND date = %s",
 				$user_id,
 				$date
-			)
+			),
+			ARRAY_A
 		);
-		return null === $sum ? null : (float) $sum;
+		if ( ! $row || ! (int) $row['n'] ) {
+			return null;
+		}
+		return array(
+			'card'    => (float) $row['card'],
+			'service' => (float) $row['service'],
+			'cash'    => (float) $row['cash'],
+		);
 	}
 
 	/** Zgodność wsteczna: kwota netto napiwków dnia. */
 	public static function get_daily_tips( $user_id, $date ) {
 		return self::get_tips_breakdown( $user_id, $date )['net'];
+	}
+
+	/* ---------------------------------------------------------------
+	 * Wpisy kelnera: gotówka i premia (informacyjne)
+	 * ------------------------------------------------------------- */
+
+	public static function is_waiter( $user_id ) {
+		$user = get_userdata( $user_id );
+		return $user && in_array( 'kelner', (array) $user->roles, true );
+	}
+
+	/** @return array{cash:?float,bonus:?float} */
+	public static function get_extras( $user_id, $date ) {
+		global $wpdb;
+		$table = EHTT_DB::table_extras();
+		$row   = $wpdb->get_row(
+			$wpdb->prepare( "SELECT cash, bonus FROM {$table} WHERE user_id = %d AND extra_date = %s", $user_id, $date ),
+			ARRAY_A
+		);
+		return array(
+			'cash'  => ( $row && null !== $row['cash'] ) ? (float) $row['cash'] : null,
+			'bonus' => ( $row && null !== $row['bonus'] ) ? (float) $row['bonus'] : null,
+		);
+	}
+
+	/** Zapis wpisów kelnera; null w obu polach usuwa wiersz. */
+	public static function set_extras( $user_id, $date, $cash, $bonus ) {
+		global $wpdb;
+		$table = EHTT_DB::table_extras();
+		if ( null === $cash && null === $bonus ) {
+			$wpdb->delete( $table, array( 'user_id' => $user_id, 'extra_date' => $date ) );
+			return;
+		}
+		$existing = $wpdb->get_var(
+			$wpdb->prepare( "SELECT id FROM {$table} WHERE user_id = %d AND extra_date = %s", $user_id, $date )
+		);
+		$data = array(
+			'cash'       => $cash,
+			'bonus'      => $bonus,
+			'updated_at' => current_time( 'mysql' ),
+		);
+		if ( $existing ) {
+			$wpdb->update( $table, $data, array( 'id' => $existing ) );
+		} else {
+			$data['user_id']    = $user_id;
+			$data['extra_date'] = $date;
+			$wpdb->insert( $table, $data );
+		}
 	}
 
 	/* ---------------------------------------------------------------
