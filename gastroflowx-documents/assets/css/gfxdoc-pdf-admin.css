@@ -1,0 +1,40 @@
+/* GastroFlowx Documents — "Plik PDF" meta box (wp-admin only). */
+#gfxdoc-pdf-box .gfxdoc-pdf-drop {
+	border: 2px dashed #93c5fd;
+	border-radius: 8px;
+	background: #f8fbff;
+	padding: 14px 10px;
+	text-align: center;
+	transition: background .15s, border-color .15s;
+}
+#gfxdoc-pdf-box .gfxdoc-pdf-drop.is-over,
+#gfxdoc-pdf-box .gfxdoc-pdf-drop:focus {
+	background: #eff6ff;
+	border-color: #2563eb;
+	outline: none;
+}
+#gfxdoc-pdf-box .gfxdoc-pdf-drop .dashicons { font-size: 32px; width: 32px; height: 32px; color: #2563eb; }
+#gfxdoc-pdf-box .gfxdoc-pdf-drop p { margin: 6px 0; }
+#gfxdoc-pdf-box .gfxdoc-pdf-file {
+	display: flex;
+	gap: 8px;
+	align-items: flex-start;
+	padding: 8px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+	margin-bottom: 10px;
+	word-break: break-word;
+}
+#gfxdoc-pdf-box .gfxdoc-pdf-file .dashicons { color: #d63638; font-size: 28px; width: 28px; height: 28px; flex: none; }
+#gfxdoc-pdf-box .gfxdoc-pdf-status { font-size: 12px; color: #646970; }
+#gfxdoc-pdf-box .gfxdoc-pdf-status--edited { color: #1d4ed8; font-weight: 600; }
+#gfxdoc-pdf-box .gfxdoc-pdf-wide { width: 100%; text-align: center; justify-content: center; white-space: normal; height: auto; line-height: 1.4; padding-top: 4px; padding-bottom: 4px; }
+#gfxdoc-pdf-box .gfxdoc-pdf-row { display: flex; flex-wrap: wrap; gap: 6px; }
+#gfxdoc-pdf-box .gfxdoc-pdf-row--danger { justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid #f0f0f1; }
+#gfxdoc-pdf-box .gfxdoc-pdf-row--danger label { cursor: pointer; color: #2271b1; text-decoration: underline; }
+#gfxdoc-pdf-box .gfxdoc-pdf-source { border: 0; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid #f0f0f1; }
+#gfxdoc-pdf-box .gfxdoc-pdf-source legend { margin-bottom: 4px; }
+#gfxdoc-pdf-box .gfxdoc-pdf-source label { display: inline-block; margin: 3px 0; }
+#gfxdoc-pdf-box .gfxdoc-pdf-progress { margin-top: 8px; color: #646970; }
+#gfxdoc-pdf-box .gfxdoc-pdf-progress .spinner { float: none; margin: 0 4px 0 0; }

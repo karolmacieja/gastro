@@ -1,0 +1,119 @@
+/* GastroFlowx Documents — shared look for preview + PDF export.
+   Keep this file dompdf-friendly: no flexbox/grid, no CSS variables,
+   no box-shadow-only effects that don't degrade gracefully. */
+
+.gfxdoc-content {
+  font-family: "DejaVu Sans", Arial, sans-serif;
+  color: #1F2937;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.gfxdoc-content h1 { color: #1E3A8A; font-size: 22px; margin: 0 0 4px 0; padding-bottom: 8px; border-bottom: 3px solid #2563EB; }
+.gfxdoc-content h2 { color: #1D4ED8; font-size: 15px; border-bottom: 2px solid #DBEAFE; padding-bottom: 4px; margin-top: 22px; page-break-after: avoid; }
+.gfxdoc-content h3 { page-break-after: avoid; }
+.gfxdoc-content h3 { color: #1D4ED8; font-size: 13px; margin-top: 14px; margin-bottom: 5px; }
+.gfxdoc-content h4 { color: #374151; font-size: 12px; margin-top: 10px; margin-bottom: 4px; }
+.gfxdoc-content p  { margin: 8px 0; }
+.gfxdoc-content ul, .gfxdoc-content ol { margin-top: 4px; margin-bottom: 8px; padding-left: 20px; }
+.gfxdoc-content li { margin-bottom: 4px; }
+
+/* Colored info boxes — same palette as the original PDF templates */
+.gfxdoc-box {
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin: 10px 0;
+  border: 1px solid #E5E7EB;
+  background: #F9FAFB;
+}
+.gfxdoc-box p:first-child { margin-top: 0; }
+.gfxdoc-box p:last-child { margin-bottom: 0; }
+.gfxdoc-box--blue   { background: #EFF6FF; border-color: #BFDBFE; }
+.gfxdoc-box--yellow { background: #FFFBEB; border-color: #FDE68A; }
+.gfxdoc-box--green  { background: #F0FDF4; border-color: #BBF7D0; }
+.gfxdoc-box--red    { background: #FEF2F2; border-color: #FECACA; }
+.gfxdoc-box--muted  { background: #F9FAFB; border-color: #E5E7EB; color: #6B7280; font-size: 11px; }
+.gfxdoc-box--fill   { background: #FFFFFF; border: 1.5px dashed #93C5FD; }
+.gfxdoc-box--party  { background: #FFFFFF; border: 1.5px solid #2563EB; }
+
+/* Small pill badge, e.g. role labels */
+.gfxdoc-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  margin-left: 6px;
+}
+
+/* Dotted fill-in line for hand-written data */
+.gfxdoc-fillin {
+  border-bottom: 1px dotted #1D4ED8;
+  color: #1D4ED8;
+}
+
+/* Muted footer-style note */
+.gfxdoc-note {
+  margin-top: 24px;
+  font-size: 10.5px;
+  color: #9CA3AF;
+  border-top: 1px solid #E5E7EB;
+  padding-top: 8px;
+}
+
+/* Tables: plain data tables, field tables ("label | ....") and the
+   ready-made signature table all share one bordered look */
+.gfxdoc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 16px 0;
+  font-size: 11.3px;
+}
+.gfxdoc-table td, .gfxdoc-table th {
+  border: 1px solid #E5E7EB;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.gfxdoc-table th { background: #EFF6FF; color: #1D4ED8; font-weight: bold; }
+.gfxdoc-table tr { page-break-inside: avoid; }
+.gfxdoc-table code { font-size: 10px; }
+.gfxdoc-fieldtable__label { width: 40%; background: #FAFAFA; }
+.gfxdoc-sigtable td { text-align: left; vertical-align: bottom; }
+
+/* On-screen-only marker for [gfxpagebreak]; suppressed in the PDF build,
+   which instead gets an actual CSS page-break (see class-gfxdoc-pdf.php). */
+.gfxdoc-pagebreak-marker {
+  border: none;
+  border-top: 2px dashed #CBD5E1;
+  margin: 24px 0;
+}
+.gfxdoc-pagebreak-marker::after {
+  content: "✂ podział strony w PDF";
+}
+
+/* Typography helpers used by the starter documents */
+.gfxdoc-content .subtitle { color: #6B7280; font-size: 12.5px; font-style: italic; margin: 6px 0 14px 0; }
+.gfxdoc-content .note { font-size: 11px; color: #6B7280; background: #F9FAFB; border-left: 3px solid #93C5FD; padding: 6px 10px; margin: 8px 0 12px 0; }
+.gfxdoc-content .small { font-size: 10.5px; color: #6B7280; }
+.gfxdoc-content code { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10.5px; background: #F3F4F6; color: #1E3A8A; padding: 0 3px; border-radius: 3px; }
+.gfxdoc-content sup { font-size: 8px; }
+
+/* Numbered step lists: bold blue counters */
+.gfxdoc-content ol.steps { padding-left: 22px; }
+.gfxdoc-content ol.steps li { margin-bottom: 6px; padding-left: 2px; }
+.gfxdoc-content ol.steps li::marker { color: #2563EB; font-weight: bold; }
+.gfxdoc-content ul.steps { padding-left: 20px; }
+
+/* Role / platform header inside a "party" box */
+.gfxdoc-box--party h2 { border-bottom: none; margin: 0 0 4px 0; padding: 0; }
+.gfxdoc-content .role-meta,
+.gfxdoc-content .platform-meta { font-size: 11px; color: #4B5563; }
+
+/* Inline button look-alikes (PWA guide) */
+.gfxdoc-content .btn-pill { display: inline-block; font-size: 10.5px; font-weight: bold; padding: 1px 9px; border-radius: 10px; background: #2563EB; color: #FFFFFF; }
+.gfxdoc-content .btn-pill.dark { background: #111827; }
+
+/* Nested lettered lists in contracts */
+.gfxdoc-content ol ol { margin-top: 4px; }
