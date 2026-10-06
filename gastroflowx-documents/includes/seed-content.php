@@ -19,7 +19,7 @@ function gfxdoc_seed_documents() {
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">Weranda Lunch and Wine — opis systemu pracowniczego i wszystkich jego funkcji</p>
 [gfxbox color="blue"]
-Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego moduły, kto ma do nich dostęp i jakie dane każdy moduł przechowuje. Opis przygotowano na podstawie analizy kodu wszystkich trzynastu wtyczek wchodzących w skład systemu (dwanaście modułów i łącznik Grafik → Godziny).<br/><br/>
+Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego moduły, kto ma do nich dostęp i jakie dane każdy moduł przechowuje. Opis przygotowano na podstawie analizy kodu wszystkich trzynastu wtyczek wchodzących w skład systemu (dwanaście modułów i łącznik Grafik i Napiwki → Godziny).<br/><br/>
 <strong>Wersja dokumentu:</strong> 2.0 &nbsp;|&nbsp; <strong>Stan na:</strong> październik 2026 &nbsp;|&nbsp; <strong>Przygotowano dla:</strong> Weranda Lunch and Wine (werandalunchwine.pl)
 [/gfxbox]
 <h2>Spis treści</h2>
@@ -70,7 +70,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 </table>
 [gfxpagebreak]
 <h2>2. Architektura — jak moduły łączą się w jeden system</h2>
-<p>System składa się z <strong>dwunastu wtyczek WordPress</strong> oraz małego <strong>łącznika Grafik → Godziny</strong>. Każda odpowiada za jeden obszar pracy i ma własne tabele bazy danych oraz własne, zabezpieczone REST API. Wtyczka centralna — <strong>GastroFlowx Hub</strong> — spina je w jeden panel <code>[gastroflowx_app]</code> z jednym logowaniem, wspólnym menu i wspólną macierzą uprawnień.</p>
+<p>System składa się z <strong>dwunastu wtyczek WordPress</strong> oraz małego <strong>łącznika Grafik i Napiwki → Godziny</strong>. Każda odpowiada za jeden obszar pracy i ma własne tabele bazy danych oraz własne, zabezpieczone REST API. Wtyczka centralna — <strong>GastroFlowx Hub</strong> — spina je w jeden panel <code>[gastroflowx_app]</code> z jednym logowaniem, wspólnym menu i wspólną macierzą uprawnień.</p>
 <table class="gfxdoc-table">
 <tr><th style="width:26%;">Moduł (wtyczka)</th><th>Do czego służy</th><th style="width:22%;">Gdzie widoczny</th></tr>
 <tr><td><strong>GastroFlowx Hub</strong><br/><span class="small">gastroflowx-hub</span></td><td>Logowanie, menu, uprawnienia ról, Moje konto, Urodziny, zgody, aplikacja PWA, centralne powiadomienia push.</td><td>Strona domowa, Moje konto, Urodziny</td></tr>
@@ -84,7 +84,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td><strong>Dokumenty GastroFlowX</strong><br/><span class="small">gastroflowx-dokumenty</span></td><td>Raporty dobowe: zdjęcia wydruków z kasy fiskalnej i terminala składane w jeden PDF.</td><td>Raporty dobowe</td></tr>
 <tr><td><strong>Access Cards</strong><br/><span class="small">gastroflowx-access-cards</span></td><td>Dwustronne karty dostępu z kodami QR oraz listy pracowników do druku.</td><td class="small">tylko administrator (wp-admin)</td></tr>
 <tr><td><strong>WP User Activity Tracker</strong><br/><span class="small">wp-user-activity-tracker</span></td><td>Rejestr logowań, sesji, odwiedzanych stron i edycji — bezpieczeństwo i rozliczalność.</td><td class="small">tylko administrator (wp-admin)</td></tr>
-<tr><td><strong>Łącznik Grafik → Godziny</strong><br/><span class="small">gastroflowx-grafik-godziny</span></td><td>Podpowiada w Ewidencji Godzin godzinę rozpoczęcia z opublikowanego grafiku.</td><td class="small">działa w tle</td></tr>
+<tr><td><strong>Łącznik Grafik i Napiwki → Godziny</strong><br/><span class="small">gastroflowx-grafik-godziny</span></td><td>W Ewidencji Godzin podpowiada godzinę rozpoczęcia z Grafiku i pobiera napiwki dnia z modułu Napiwków.</td><td class="small">działa w tle</td></tr>
 <tr><td><strong>GastroFlowx Documents</strong><br/><span class="small">gastroflowx-documents</span></td><td>Edytor dokumentów firmowych (ten dokument, polityka, regulamin, porozumienie) z eksportem do PDF.</td><td class="small">tylko administrator (wp-admin)</td></tr>
 </table>
 <p class="note">Moduły Menu, Pliki i Dokumenty (raporty dobowe) dodaje się do panelu w <code>GastroFlowx → Moduły</code> (nazwa, ikona, shortcode). Ich dokładne nazwy w menu ustala administrator.</p>
@@ -96,7 +96,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Wspólny wygląd</strong> — wszystkie moduły używają tego samego niebieskiego motywu GastroFlowx (kolor przewodni #2563EB) i ikon Font Awesome.</li>
 </ul>
 [gfxbox color="muted"]
-<strong>Ewidencja Godzin a Grafik.</strong> Łącznik <em>GastroFlowx — Grafik → Godziny</em> sprawia, że Ewidencja Godzin podpowiada godzinę rozpoczęcia pracy z opublikowanej zmiany w Grafiku (najwcześniejsza zmiana danego dnia; wersje robocze i znaczniki „Nieobecny/Dostępny” są pomijane). Ręczny wpis osoby zarządzającej Ewidencją ma pierwszeństwo przed Grafikiem. Napiwki dnia w Ewidencji wpisuje się na razie ręcznie — integracja z modułem Napiwków wymaga osobnego łącznika.
+<strong>Ewidencja Godzin a Grafik i Napiwki.</strong> Łącznik <em>GastroFlowx — Grafik i Napiwki → Godziny</em> sprawia, że Ewidencja Godzin podpowiada godzinę rozpoczęcia pracy z opublikowanej zmiany w Grafiku (najwcześniejsza zmiana danego dnia; wersje robocze i znaczniki „Nieobecny/Dostępny” są pomijane). Ten sam łącznik pobiera do Ewidencji <strong>napiwki dnia z modułu Napiwków</strong> — kwotę wypłaty liczoną dokładnie tak jak w Napiwkach (po podatku, po oddaniu puli baru i kuchni, z wyjątkami procentowymi; dla baru i kuchni — udział z gotówki, karty i serwisu). Ponieważ ta kwota jest już po podziale, łącznik wyłącza w Ewidencji dodatkowe odliczenia procentowe dla kuchni i baru. W obu przypadkach ręczny wpis osoby zarządzającej Ewidencją ma pierwszeństwo.
 [/gfxbox]
 [gfxpagebreak]
 <h2>3. Panel Pracownika (Hub) [gfxbadge]wszyscy pracownicy[/gfxbadge]</h2>
@@ -186,10 +186,10 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li>Zakładka <strong>Dzień</strong> — godzina rozpoczęcia i zakończenia pracy, zawsze zaokrąglana do 15 minut; czas pokazywany jako np. „7,5 h”; notatka.</li>
 <li><strong>Podpowiedź z Grafiku</strong> — godzina rozpoczęcia jest wstępnie ustawiana na początek Twojej zmiany z Grafiku; można ją zmienić.</li>
 <li><strong>Stawka godzinowa</strong> — ogólna, z możliwością nadpisania dla konkretnej osoby lub dnia.</li>
-<li><strong>Napiwki dnia</strong> z podziałem na kuchnię i bar (konfigurowalne %).</li>
+<li><strong>Napiwki dnia</strong> — pobierane automatycznie z modułu Napiwków (kwota wypłaty po podziale); bez łącznika wpisywane ręcznie, z odliczeniem konfigurowalnego % dla kuchni i baru.</li>
 <li><strong>Podsumowanie dnia</strong> — zarobek z godzin, napiwki brutto/netto, kwota przelewu, gotówka po odliczeniu podziału, łączny zarobek.</li>
 <li><strong>Kalendarz i podsumowanie</strong> — siatka miesiąca z godzinami, zarobkiem i napiwkami.</li>
-<li>Każdy widzi i edytuje <u>wyłącznie własne</u> wpisy. Osoba z uprawnieniem <code>ehtt_manage_timesheets</code> (domyślnie administrator) widzi wszystkich, ustawia stawki, ręcznie nadpisuje podpowiedzi godzin i uzupełnia napiwki dnia oraz zmienia ustawienia.</li>
+<li>Każdy widzi i edytuje <u>wyłącznie własne</u> wpisy. Osoba z uprawnieniem <code>ehtt_manage_timesheets</code> (domyślnie administrator) widzi wszystkich, ustawia stawki, ręcznie nadpisuje podpowiedzi godzin i napiwków dnia oraz zmienia ustawienia.</li>
 </ul>
 <h2>7. Generator Menu Lunchowego [gfxbadge]rola „lunch” / administrator[/gfxbadge]</h2>
 <ul>
@@ -311,7 +311,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Raport miesięczny:</strong> po zakończeniu miesiąca dla każdej sekcji przygotowywany jest raport rozliczenia napiwków. Kwoty w raporcie są <strong>jawne dla wszystkich pracowników danej sekcji</strong> uczestniczących w podziale — zgodnie z §3 „Regulaminu podziału i rozliczania napiwków”.</li>
 <li><strong>Pracodawca nie otrzymuje danych z Systemu</strong> i nie ma do niego dostępu. Prowadzi własną, odrębną dokumentację wynagrodzeń i rozliczeń.</li>
 </ul>
-[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Łącznik Grafik → Godziny 1.0.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.0.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
+[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Łącznik Grafik i Napiwki → Godziny 1.1.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.0.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
 GFXDOC_SEED,
 		),
 		array(
@@ -407,7 +407,7 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <h3>3.3 Godziny</h3>
 <ol class="steps">
 <li>Zakładka <strong>Dzień</strong> → wpisz godzinę rozpoczęcia i zakończenia (zaokrąglają się do 15 minut). Godzina rozpoczęcia jest podpowiadana z Twojej zmiany w Grafiku — sprawdź ją i popraw, jeśli zacząłeś/zaczęłaś o innej porze.</li>
-<li>Sprawdź podsumowanie: zarobek z godzin, napiwki, łączny zarobek.</li>
+<li>Sprawdź podsumowanie: zarobek z godzin, napiwki (pobierane automatycznie z modułu Napiwków — ta sama kwota, co Twoja wypłata dnia w Napiwkach), łączny zarobek. Jeśli napiwki się nie zgadzają, zgłoś to osobie rozliczającej w Napiwkach.</li>
 <li><strong>Kalendarz i podsumowanie</strong> — cały miesiąc w jednym widoku.</li>
 </ol>
 [gfxbox color="party"]
@@ -574,10 +574,11 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <li>Eksport CSV przechowuj bezpiecznie i usuwaj po wykorzystaniu.</li>
 <li>Pamiętaj, że logowanie kodem QR nie trafia do dziennika jako „Logowanie”.</li>
 </ul>
-<h3>13.5 Ewidencja godzin i łącznik z Grafikiem</h3>
+<h3>13.5 Ewidencja godzin i łącznik z Grafikiem i Napiwkami</h3>
 <ul>
-<li>Aktywuj wtyczkę <strong>GastroFlowx — Grafik → Godziny</strong> (przy aktywnym Grafiku i Ewidencji). Od tej chwili godzina rozpoczęcia podpowiada się z opublikowanej zmiany.</li>
-<li>Ręczny wpis w sekcji „Zarządzanie” Ewidencji nadpisuje podpowiedź z Grafiku na dany dzień.</li>
+<li>Aktywuj wtyczkę <strong>GastroFlowx — Grafik i Napiwki → Godziny</strong>. Godzina rozpoczęcia podpowiada się z opublikowanej zmiany, a napiwki dnia pobierają się z modułu Napiwków.</li>
+<li>Odliczenia „% dla kuchni” i „% dla baru” w ustawieniach Ewidencji są wtedy automatycznie ustawione na 0 — kwota z Napiwków jest już po podziale.</li>
+<li>Ręczny wpis w sekcji „Zarządzanie” Ewidencji nadpisuje dane z Grafiku i Napiwków na dany dzień.</li>
 </ul>
 <h3>13.6 Obowiązki związane z danymi</h3>
 <ul>
@@ -782,7 +783,7 @@ GFXDOC_SEED,
 <tr><td>Zgody</td><td>Historia wyrażenia i wycofania zgody: data i godzina, wersja polityki, adres IP.</td><td>System, przy Twojej decyzji.</td></tr>
 <tr><td>Grafik</td><td>Zmiany (dzień, godziny, zmiana zamykająca, komentarz), dyspozycyjność i notatki, wnioski o dni wolne (daty, powód z listy, komentarz, decyzja i notatka menadżera), prośby o zamianę, uprawnienie do zamykania lokalu, status „nieaktywny”, prywatny klucz kanału kalendarza (iCal).</td><td>Ty, menadżerowie, algorytm generowania (wersje robocze).</td></tr>
 <tr><td>Napiwki</td><td>Dzienne kwoty napiwków z karty, serwisu i gotówki, przepracowane godziny, wyliczone pule i wypłaty, wyjątki procentowe, przypisanie do rezerwacji, kwoty fizycznie przekazane i różnice, data zakończenia pracy.</td><td>Ty, manager napiwków, osoby rozliczające bar i kuchnię.</td></tr>
-<tr><td>Ewidencja godzin</td><td>Godziny rozpoczęcia i zakończenia pracy, liczba godzin, stawka godzinowa i jej nadpisania, notatki, napiwki dnia, wyliczony zarobek.</td><td>Ty i osoba zarządzająca ewidencją.</td></tr>
+<tr><td>Ewidencja godzin</td><td>Godziny rozpoczęcia i zakończenia pracy, liczba godzin, stawka godzinowa i jej nadpisania, notatki, napiwki dnia, wyliczony zarobek.</td><td>Ty i osoba zarządzająca ewidencją; godzina startu podpowiadana z Grafiku, napiwki dnia pobierane z modułu Napiwków.</td></tr>
 <tr><td>Raporty dobowe</td><td>Kto i kiedy wygenerował raport lub dodał zdjęcie; przy włączonym Archiwum — zdjęcia wydruków z kasy i terminala (mogą zawierać np. nazwę kasjera).</td><td>Osoba tworząca raport.</td></tr>
 <tr><td>Pliki i dokumenty</td><td>Autor dokumentu w bibliotece druków.</td><td>System.</td></tr>
 <tr><td>Powiadomienia</td><td>Urządzenia z włączonymi powiadomieniami push (identyfikator urządzenia, token Firebase, data ostatniej aktywności), historia wysyłki (odbiorca, tytuł, status, ewentualny błąd), treść wysłanych e-maili.</td><td>Twoje urządzenie, System.</td></tr>
