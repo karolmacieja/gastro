@@ -1,9 +1,9 @@
 <?php
 /**
- * Starter content for the six GastroFlowx business documents, inserted by
- * GFXDoc_Seed (see class-gfxdoc-seed.php). 'since' is the seed version that
- * introduced the document: on upgrade only documents newer than the stored
- * seed version are added, so nothing the admin edited or deleted is touched.
+ * Starter content for the six GastroFlowx business documents, used by
+ * GFXDoc_Seed (see class-gfxdoc-seed.php). 'since' = seed version that added
+ * the document, 'updated' = seed version of its current text. On upgrade new
+ * documents are added and changed ones replace only unedited copies.
  * The tip regulations and the PWA guide are kept verbatim from seed version 1.
  */
 
@@ -16,6 +16,7 @@ function gfxdoc_seed_documents() {
 		array(
 			'title'   => 'Opis systemu i funkcji GastroFlowx',
 			'since'   => 2,
+			'updated' => 3,
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">Weranda Lunch and Wine — opis systemu pracowniczego i wszystkich jego funkcji</p>
 [gfxbox color="blue"]
@@ -318,6 +319,7 @@ GFXDOC_SEED,
 		array(
 			'title'   => 'Instrukcje dla pracowników',
 			'since'   => 2,
+			'updated' => 3,
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">System GastroFlowx — Weranda Lunch and Wine — instrukcje krok po kroku według ról</p>
 [gfxbox color="blue"]
@@ -607,6 +609,7 @@ GFXDOC_SEED,
 		array(
 			'title'   => 'Instalacja aplikacji (PWA) i powiadomienia push',
 			'since'   => 1,
+			'updated' => 1,
 			'content' => <<<'GFXDOC_SEED'
 <p><em>System GastroFlowx — Weranda Lunch and Wine</em></p><p class="gfxdoc-note">
     Ten dokument tłumaczy krok po kroku, jak zainstalować panel pracownika<br/>
@@ -752,6 +755,7 @@ GFXDOC_SEED,
 		array(
 			'title'   => 'Polityka prywatności systemu GastroFlowx',
 			'since'   => 2,
+			'updated' => 3,
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">Informacja o przetwarzaniu danych osobowych użytkowników panelu pracownika GastroFlowx (art. 13 RODO)</p>[gfxbadge]Zgodna z RODO (UE) 2016/679[/gfxbadge]
 [gfxbox color="fill"]
@@ -890,6 +894,7 @@ GFXDOC_SEED,
 		array(
 			'title'   => 'Regulamin podziału i rozliczania napiwków',
 			'since'   => 1,
+			'updated' => 1,
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">Restauracja Weranda Lunch and Wine</p>
 [gfxbox color="yellow"]
@@ -994,6 +999,7 @@ GFXDOC_SEED,
 		array(
 			'title'   => 'Porozumienie z pracodawcą w sprawie korzystania z systemu GastroFlowx i przekazywania danych',
 			'since'   => 2,
+			'updated' => 3,
 			'content' => <<<'GFXDOC_SEED'
 <p class="subtitle">Porozumienie w sprawie korzystania z systemu GastroFlowx i przekazywania danych — restauracja Weranda Lunch and Wine</p>
 [gfxbox color="yellow"]
