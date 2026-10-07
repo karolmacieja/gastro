@@ -1,9 +1,9 @@
 <?php
 /**
- * Starter content for the six GastroFlowx business documents, used by
- * GFXDoc_Seed (see class-gfxdoc-seed.php). 'since' = seed version that added
- * the document, 'updated' = seed version of its current text. On upgrade new
- * documents are added and changed ones replace only unedited copies.
+ * Starter content for the six GastroFlowx business documents, added as new
+ * published documents by GFXDoc_Seed (see class-gfxdoc-seed.php) on install,
+ * on each new seed version and from the „Wgraj dokumenty startowe ponownie”
+ * button. 'since' / 'updated' are informational (seed version of the text).
  * The tip regulations and the PWA guide are kept verbatim from seed version 1.
  */
 

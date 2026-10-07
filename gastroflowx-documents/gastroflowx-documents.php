@@ -3,7 +3,7 @@
  * Plugin Name:       GastroFlowx Documents
  * Plugin URI:        https://gastroflowx.pl
  * Description:       Edytor dokumentów firmowych (regulaminy, polityki, porozumienia) z zachowaniem stylizacji GastroFlowx oraz eksportem do PDF jednym kliknięciem. Pozwala też wgrać gotowy PDF i edytować go bezpośrednio w panelu WordPress.
- * Version:           1.3.1
+ * Version:           1.3.2
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            GastroFlowx
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'GFXDOC_VERSION', '1.3.1' );
+define( 'GFXDOC_VERSION', '1.3.2' );
 define( 'GFXDOC_FILE', __FILE__ );
 define( 'GFXDOC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFXDOC_URL', plugin_dir_url( __FILE__ ) );
