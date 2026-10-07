@@ -1,0 +1,20 @@
+.gfx-wrap .gfx-card {
+	background: #fff;
+	border: 1px solid #e2e2e2;
+	border-radius: 10px;
+	padding: 20px 24px;
+	margin: 20px 0;
+	max-width: 900px;
+}
+.gfx-wrap .gfx-matrix { border-collapse: collapse; }
+.gfx-wrap .gfx-matrix th,
+.gfx-wrap .gfx-matrix td {
+	padding: 10px 14px;
+	border-bottom: 1px solid #eee;
+	vertical-align: middle;
+}
+.gfx-wrap .gfx-matrix thead th {
+	background: #f6f7f7;
+	font-weight: 600;
+}
+.gfx-logo-picker img { display: block; margin-bottom: 10px; }

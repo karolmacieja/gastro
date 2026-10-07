@@ -1,0 +1,127 @@
+/* GastroFlowx — moduł Urodziny */
+
+.gfx-bday-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 24px; }
+.gfx-bday-head h2 { margin: 0; font-size: 24px; font-weight: 800; color: var(--gfx-gray-800); }
+.gfx-bday-head p { margin: 4px 0 0; font-size: 13px; color: var(--gfx-gray-500); }
+
+.gfx-bday-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 1000px) { .gfx-bday-layout { grid-template-columns: 2fr 1fr; gap: 24px; } }
+
+/* --- Kalendarz --- */
+.gfx-bday-calendar-card { background: #fff; border: 1px solid var(--gfx-gray-200); border-radius: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.03); padding: 20px; }
+.gfx-bday-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.gfx-bday-cal-nav h3 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--gfx-gray-800); }
+.gfx-bday-nav-btn {
+	width: 38px; height: 38px; border-radius: 50%; background: var(--gfx-gray-50);
+	border: 1px solid var(--gfx-gray-200); color: var(--gfx-gray-500);
+	display: flex; align-items: center; justify-content: center; cursor: pointer;
+	transition: background .15s;
+}
+.gfx-bday-nav-btn:hover { background: var(--gfx-gray-100); }
+
+.gfx-bday-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; text-align: center; }
+.gfx-bday-weekdays span { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--gfx-gray-400); }
+.gfx-bday-weekdays span.is-sun { color: #f87171; }
+
+.gfx-bday-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.gfx-bday-cell {
+	position: relative; border-radius: 12px; border: 1px solid var(--gfx-gray-100);
+	min-height: 56px; padding: 6px; display: flex; flex-direction: column; cursor: default;
+	transition: background .15s, box-shadow .15s;
+}
+.gfx-bday-cell:not(.gfx-bday-cell-empty):hover { background: var(--gfx-gray-50); }
+.gfx-bday-cell-empty { border-color: transparent; }
+.gfx-bday-num { font-size: 13px; font-weight: 700; color: var(--gfx-gray-600); }
+
+.gfx-bday-cell.is-today {
+	border: 2px solid var(--gfx-blue) !important; background: var(--gfx-blue-50);
+	align-items: center; text-align: center; box-shadow: 0 0 0 0 rgba(37,99,235,.4);
+	animation: gfxBdayPulse 2s infinite;
+}
+.gfx-bday-cell.is-today .gfx-bday-num { color: var(--gfx-blue-dark); font-weight: 800; }
+.gfx-bday-today-tag {
+	margin-top: auto; font-size: 8px; font-weight: 800; text-transform: uppercase;
+	color: var(--gfx-blue); background: #fff; padding: 2px 6px; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+.gfx-bday-today-dot { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--gfx-blue); margin: auto auto 2px; }
+
+.gfx-bday-cell.has-bday { background: linear-gradient(135deg, var(--gfx-blue-50), #dbeafe); border-color: #bfdbfe; }
+.gfx-bday-icon { margin-top: auto; text-align: center; color: var(--gfx-blue); font-size: 16px; align-self: center; }
+
+.gfx-bday-tooltip {
+	position: absolute; inset: 0; border-radius: 11px; background: var(--gfx-blue);
+	color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+	font-size: 10px; font-weight: 700; text-align: center; opacity: 0; pointer-events: none;
+	transition: opacity .15s; padding: 4px; line-height: 1.3;
+}
+.gfx-bday-cell.has-bday:hover .gfx-bday-tooltip { opacity: 1; }
+
+@keyframes gfxBdayPulse {
+	0% { box-shadow: 0 0 0 0 rgba(37,99,235,.4); }
+	70% { box-shadow: 0 0 0 7px rgba(37,99,235,0); }
+	100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+}
+
+@media (max-width: 480px) {
+	.gfx-bday-cell { min-height: 44px; padding: 4px; }
+	.gfx-bday-today-tag { display: none; }
+	.gfx-bday-today-dot { display: block; }
+}
+
+/* --- Lista nadchodzących --- */
+.gfx-bday-list-card { background: #fff; border: 1px solid var(--gfx-gray-200); border-radius: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.03); overflow: hidden; display: flex; flex-direction: column; }
+.gfx-bday-list-head { padding: 18px 20px; border-bottom: 1px solid var(--gfx-gray-100); background: var(--gfx-gray-50); }
+.gfx-bday-list-head h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--gfx-gray-800); display: flex; align-items: center; gap: 8px; }
+.gfx-bday-list-head i { color: var(--gfx-blue); }
+.gfx-bday-list-body { padding: 16px; max-height: 560px; overflow-y: auto; }
+.gfx-bday-month-group + .gfx-bday-month-group { margin-top: 20px; }
+.gfx-bday-month-group h4 {
+	display: flex; align-items: center; gap: 8px;
+	font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+	color: var(--gfx-gray-400); margin: 0 0 10px;
+}
+.gfx-bday-month-group h4 span { height: 1px; flex: 1; background: var(--gfx-gray-200); }
+.gfx-bday-month-items { display: flex; flex-direction: column; gap: 10px; }
+
+.gfx-bday-item {
+	display: flex; align-items: center; gap: 14px;
+	background: #fff; border: 1px solid var(--gfx-gray-100); border-radius: 16px; padding: 12px;
+	transition: border-color .15s;
+}
+.gfx-bday-item:hover { border-color: #bfdbfe; }
+.gfx-bday-badge {
+	min-width: 50px; text-align: center; border-radius: 12px; padding: 6px 4px;
+	background: var(--gfx-gray-50); border: 1px solid var(--gfx-gray-200); color: var(--gfx-gray-600);
+}
+.gfx-bday-badge-month { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.gfx-bday-badge-day { display: block; font-size: 18px; font-weight: 800; line-height: 1.1; margin-top: 2px; }
+.gfx-bday-item-name { margin: 0; font-weight: 700; color: var(--gfx-gray-800); font-size: 14px; }
+.gfx-bday-item-sub { margin: 2px 0 0; font-size: 12px; color: var(--gfx-gray-500); }
+
+.gfx-bday-item.is-next {
+	background: linear-gradient(120deg, var(--gfx-blue), var(--gfx-blue-dark)) !important;
+	border: none; box-shadow: 0 4px 12px rgba(37,99,235,.25);
+}
+.gfx-bday-item.is-next .gfx-bday-badge { background: rgba(255,255,255,.18); border-color: transparent; color: #fff; }
+.gfx-bday-item.is-next .gfx-bday-item-name { color: #fff; font-size: 16px; }
+.gfx-bday-item.is-next .gfx-bday-item-sub { color: #dbeafe; font-weight: 600; }
+
+/* --- Modal "Dodaj datę" --- */
+.gfx-bday-modal {
+	position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 2000;
+	display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.gfx-bday-modal.is-open { display: flex; }
+.gfx-bday-modal-box { position: relative; width: 100%; max-width: 380px; background: #fff; border-radius: 20px; padding: 28px 24px; box-shadow: 0 20px 40px rgba(0,0,0,.2); }
+.gfx-bday-modal-box h3 { margin: 0 0 6px; font-size: 17px; font-weight: 800; }
+.gfx-bday-modal-hint { margin: 0 0 16px; font-size: 12px; color: var(--gfx-gray-500); }
+.gfx-bday-modal-box input[type="date"] { width: 100%; padding: 11px 14px; border: 1px solid var(--gfx-gray-200); border-radius: 10px; background: var(--gfx-gray-50); font-size: 14px; outline: none; }
+.gfx-bday-modal-box input[type="date"]:focus { border-color: var(--gfx-blue); background: #fff; box-shadow: 0 0 0 2px var(--gfx-blue); }
+.gfx-bday-modal-close {
+	position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%;
+	background: var(--gfx-gray-100); border: none; color: var(--gfx-gray-500); font-size: 16px; line-height: 1;
+	cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.gfx-bday-modal-msg { font-size: 12px; padding: 8px 10px; border-radius: 8px; margin: 10px 0 0; }
+.gfx-bday-modal-msg.ok { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.gfx-bday-modal-msg.err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }

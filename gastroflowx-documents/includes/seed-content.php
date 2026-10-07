@@ -105,7 +105,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <ul>
 <li><strong>Logowanie</strong> — własny ekran logowania z opcją „Zapamiętaj mnie” albo logowanie kodem QR z karty dostępu.</li>
 <li><strong>Ekran zgody</strong> — przy pierwszym logowaniu (i po wycofaniu zgody) panel pokazuje link do polityki prywatności oraz przyciski „Wyrażam zgodę” / „Nie wyrażam zgody”. System zapisuje każdą decyzję w historii: datę, wersję polityki i adres IP.</li>
-<li><strong>Menu</strong> — menu boczne (komputer) lub dolna nawigacja (telefon). Widoczne kategorie zależą od ról; wejście bez uprawnień kończy się komunikatem „Brak dostępu”.</li>
+<li><strong>Menu</strong> — menu boczne (komputer) lub dolny pasek (telefon). Widoczne kategorie zależą od ról; wejście bez uprawnień kończy się komunikatem „Brak dostępu”. Na telefonie przy więcej niż 5 modułach pasek pokazuje 4 przypięte moduły i przycisk „Więcej”, który wysuwa panel z pozostałymi modułami i wylogowaniem.</li>
 <li><strong>Strona domowa</strong> — ekran startowy panelu po zalogowaniu.</li>
 <li><strong>Moje konto</strong> — zmiana imienia, nazwiska i adresu e-mail, własne zdjęcie profilowe (ikona aparatu przy awatarze), data urodzenia, podgląd daty zgody i przycisk jej wycofania.</li>
 <li><strong>Urodziny</strong> — kalendarz miesiąca i lista nadchodzących urodzin zespołu (imię i nazwisko, data, kończony wiek). Osoby oznaczone jako nieaktywne są domyślnie ukryte. Codziennie o 9:00 system może wysłać push z życzeniami do solenizanta i ogłoszenie dla zespołu.</li>
@@ -114,7 +114,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <h3>Funkcje administracyjne (wp-admin, tylko administrator)</h3>
 <table class="gfxdoc-table">
 <tr><th style="width:36%;">Ekran</th><th>Funkcja</th></tr>
-<tr><td>GastroFlowx → Ustawienia ogólne</td><td>Nazwa restauracji, logo, link do polityki prywatności (pokazywany na ekranie zgody), ukrywanie nieaktywnych w Urodzinach.</td></tr>
+<tr><td>GastroFlowx → Ustawienia ogólne</td><td>Nazwa restauracji, logo, link do polityki prywatności (pokazywany na ekranie zgody), ukrywanie nieaktywnych w Urodzinach, moduły przypięte do dolnego paska na telefonie (do 4).</td></tr>
 <tr><td>GastroFlowx → Moduły</td><td>Dodawanie modułów do panelu (nazwa, ikona, shortcode, kategoria).</td></tr>
 <tr><td>GastroFlowx → Dostęp ról</td><td>Macierz: które role widzą które kategorie panelu. Administrator ma zawsze pełny dostęp.</td></tr>
 <tr><td>GastroFlowx → Tytuły pracowników</td><td>Indywidualny tytuł wyświetlany w nagłówku (np. „Szef kuchni”).</td></tr>
@@ -356,7 +356,7 @@ Przeczytaj rozdział 1 (wszyscy), rozdział 2 (zasady bezpieczeństwa danych) or
 [/gfxbox]
 <h3>1.2 Poruszanie się po panelu</h3>
 <ul>
-<li>Na komputerze menu jest po lewej stronie, na telefonie — na dole ekranu.</li>
+<li>Na komputerze menu jest po lewej stronie, na telefonie — na dole ekranu. Jeśli masz dostęp do wielu modułów, na dolnym pasku są 4 najważniejsze, a pozostałe (oraz „Wyloguj się”) znajdziesz pod przyciskiem <strong>„Więcej”</strong>.</li>
 <li>Widzisz tylko zakładki przypisane do Twojej roli. Komunikat „Brak dostępu” oznacza, że rola nie ma uprawnień — to nie błąd. Jeśli potrzebujesz dostępu, napisz do administratora.</li>
 <li>Panel możesz zainstalować na telefonie jako aplikację i włączyć powiadomienia — szczegóły w dokumencie „Instalacja aplikacji (PWA) i powiadomienia push”.</li>
 </ul>

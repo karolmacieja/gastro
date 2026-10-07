@@ -1,0 +1,47 @@
+/*
+ * GastroFlowx — dostrojenie kolorystyki podłączonych modułów do wspólnej
+ * niebieskiej marki, bez ingerencji w oryginalny kod poszczególnych wtyczek.
+ * Każda reguła jest celowo ograniczona do kontenera danego modułu.
+ */
+
+:root {
+	--gfx-brand-blue: #2563eb;
+	--gfx-brand-blue-dark: #1d4ed8;
+	--gfx-brand-blue-soft: #eff6ff;
+}
+
+/* --- System Napiwków (#snspa-root) — nadpisanie zmiennych CSS modułu --- */
+.gfx-module-frame #snspa-root {
+	--rs-accent: var(--gfx-brand-blue) !important;
+	--rs-accent-dark: var(--gfx-brand-blue-dark) !important;
+	--rs-accent-soft: var(--gfx-brand-blue-soft) !important;
+}
+
+/* --- Grafik pracy (Vue/Tailwind, klasy rs-accent-*) --- */
+.gfx-module-frame [class*="rs-accent"] {
+	--tw-gradient-from: var(--gfx-brand-blue) !important;
+	--tw-bg-opacity: 1 !important;
+	--tw-text-opacity: 1 !important;
+	--tw-border-opacity: 1 !important;
+}
+.gfx-module-frame .bg-rs-accent { background-color: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .bg-rs-accentSoft { background-color: var(--gfx-brand-blue-soft) !important; }
+.gfx-module-frame .text-rs-accent { color: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .border-rs-accent { border-color: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .ring-rs-accent { --tw-ring-color: var(--gfx-brand-blue) !important; }
+
+/* --- Weranda Lunch / Kolorowanki (akcent czarny -> niebieski) --- */
+.gfx-module-frame .weranda-tab-btn.active { color: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .weranda-tab-btn.active::after { background: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .weranda-input:focus,
+.gfx-module-frame .weranda-textarea:focus { border-color: var(--gfx-brand-blue) !important; box-shadow: 0 0 0 3px var(--gfx-brand-blue-soft) !important; }
+.gfx-module-frame .weranda-check-item-wrapper.active-wrapper { border-color: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .weranda-check-item.active { background: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .weranda-btn { border-color: var(--gfx-brand-blue) !important; color: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .k-category-chip.active { border-color: var(--gfx-brand-blue) !important; background: var(--gfx-brand-blue) !important; }
+.gfx-module-frame .k-btn-upload { background-color: var(--gfx-brand-blue) !important; }
+
+/* --- Employee Timesheet (nagłówek ciemnoszary -> niebieski gradient) --- */
+.gfx-module-frame .ehtt-header { background: linear-gradient(135deg, var(--gfx-brand-blue), var(--gfx-brand-blue-dark)) !important; }
+.gfx-module-frame .ehtt-tabs .active,
+.gfx-module-frame .ehtt-tab.active { color: var(--gfx-brand-blue) !important; border-color: var(--gfx-brand-blue) !important; }
