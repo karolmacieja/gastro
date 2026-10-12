@@ -138,7 +138,10 @@
 				fetch(GFX_DATA.restUrl + '/account', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': GFX_DATA.nonce },
-					body: JSON.stringify({ birthdate: date })
+					body: JSON.stringify({
+						birthdate: date,
+						birthday_consent: (document.getElementById('gfx-bday-modal-consent') || {}).checked ? '1' : '0'
+					})
 				})
 					.then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
 					.then(function (res) {

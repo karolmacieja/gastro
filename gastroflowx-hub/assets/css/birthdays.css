@@ -125,3 +125,7 @@
 .gfx-bday-modal-msg { font-size: 12px; padding: 8px 10px; border-radius: 8px; margin: 10px 0 0; }
 .gfx-bday-modal-msg.ok { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 .gfx-bday-modal-msg.err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* Brak zgody na pokazywanie własnych urodzin */
+.gfx-bday-consent-note { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 16px; padding: 12px 14px; border-radius: 14px; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; font-size: 13px; line-height: 1.45; }
+.gfx-bday-modal-consent { margin: 12px 0 4px; font-size: 13px; text-align: left; }

@@ -322,7 +322,8 @@ class GFX_Shell {
 							<span><?php esc_html_e( 'Zapamiętaj mnie', 'gastroflowx-hub' ); ?></span>
 						</label>
 
-						<p class="gfx-login-error" id="gfx-login-error" style="display:none;"></p>
+						<?php $gfx_blocked_msg = class_exists( 'GFX_Account_Block' ) ? GFX_Account_Block::login_screen_message() : ''; ?>
+						<p class="gfx-login-error" id="gfx-login-error" style="<?php echo $gfx_blocked_msg ? '' : 'display:none;'; ?>"><?php echo esc_html( $gfx_blocked_msg ); ?></p>
 
 						<button type="submit" class="gfx-btn gfx-btn-primary gfx-btn-block" id="gfx-login-submit">
 							<?php esc_html_e( 'Zaloguj się', 'gastroflowx-hub' ); ?>
@@ -660,6 +661,13 @@ class GFX_Shell {
 						<input type="date" name="birthdate" value="<?php echo esc_attr( $birthdate ); ?>" />
 						<p class="gfx-field-hint"><?php esc_html_e( 'Ta sama data jest używana przy naliczaniu napiwków (ulga podatkowa < 26 lat).', 'gastroflowx-hub' ); ?></p>
 					</div>
+					<div class="gfx-field gfx-field-check">
+						<label class="gfx-check">
+							<input type="checkbox" name="birthday_consent" id="gfx-birthday-consent" value="1" <?php checked( class_exists( 'GFX_Birthdays' ) && GFX_Birthdays::has_consent( $user->ID ) ); ?> />
+							<span><?php esc_html_e( 'Wyrażam zgodę na pokazywanie moich urodzin (dzień, miesiąc i wiek) zespołowi w module Urodziny oraz na powiadomienia urodzinowe.', 'gastroflowx-hub' ); ?></span>
+						</label>
+						<p class="gfx-field-hint"><?php esc_html_e( 'Zgoda jest dobrowolna i możesz ją w każdej chwili odznaczyć. Nie wpływa na naliczanie ulgi podatkowej w Napiwkach.', 'gastroflowx-hub' ); ?></p>
+					</div>
 
 					<p class="gfx-account-msg" id="gfx-account-msg" style="display:none;"></p>
 
@@ -744,6 +752,9 @@ class GFX_Shell {
 		ob_start();
 		?>
 		<div class="gfx-bday">
+			<?php if ( ! GFX_Birthdays::has_consent( $user->ID ) ) : ?>
+				<p class="gfx-bday-consent-note"><i class="fa-solid fa-circle-info"></i> <?php esc_html_e( 'Twoje urodziny nie są widoczne dla zespołu. Aby je pokazać i dostawać życzenia, zaznacz zgodę w „Moje konto” albo w okienku „Dodaj datę”.', 'gastroflowx-hub' ); ?></p>
+			<?php endif; ?>
 			<div class="gfx-bday-head">
 				<div>
 					<h2><?php esc_html_e( 'Urodziny w zespole', 'gastroflowx-hub' ); ?></h2>
@@ -819,6 +830,10 @@ class GFX_Shell {
 				<p class="gfx-bday-modal-hint"><?php esc_html_e( 'Ta sama data jest widoczna w „Moje konto” i używana przy naliczaniu napiwków.', 'gastroflowx-hub' ); ?></p>
 				<form id="gfx-bday-modal-form">
 					<input type="date" id="gfx-bday-modal-date" required value="<?php echo esc_attr( $my_birthdate ); ?>" />
+					<label class="gfx-check gfx-bday-modal-consent">
+						<input type="checkbox" id="gfx-bday-modal-consent" value="1" <?php checked( GFX_Birthdays::has_consent( $user->ID ) ); ?> />
+						<span><?php esc_html_e( 'Pokazuj moje urodziny zespołowi i wysyłaj powiadomienia urodzinowe', 'gastroflowx-hub' ); ?></span>
+					</label>
 					<p class="gfx-bday-modal-msg" id="gfx-bday-modal-msg" style="display:none;"></p>
 					<button type="submit" class="gfx-btn gfx-btn-primary gfx-btn-block"><?php esc_html_e( 'Zapisz', 'gastroflowx-hub' ); ?></button>
 				</form>

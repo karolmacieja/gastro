@@ -59,6 +59,9 @@ class GFX_Settings {
 			if ( isset( $_POST['gfx_privacy_policy_url'] ) ) {
 				update_option( 'gfx_privacy_policy_url', sanitize_url( wp_unslash( $_POST['gfx_privacy_policy_url'] ) ) );
 			}
+			if ( isset( $_POST['gfx_blocked_message'] ) ) {
+				update_option( 'gfx_blocked_message', sanitize_textarea_field( wp_unslash( $_POST['gfx_blocked_message'] ) ) );
+			}
 			if ( isset( $_POST['gfx_bottom_nav_submitted'] ) ) {
 				$pinned = isset( $_POST['gfx_bottom_nav_pinned'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['gfx_bottom_nav_pinned'] ) ) : array();
 				$pinned = array_values( array_intersect( array_keys( GFX_Modules::all() ), $pinned ) );
@@ -316,6 +319,13 @@ class GFX_Settings {
 						<td>
 							<input type="url" id="gfx_privacy_policy_url" name="gfx_privacy_policy_url" class="regular-text" value="<?php echo esc_attr( $privacy_url ); ?>" placeholder="https://werandalunchwine.pl/polityka-prywatnosci.pdf" />
 							<p class="description"><?php esc_html_e( 'Adres do dokumentu polityki prywatności (np. plik PDF wgrany do biblioteki mediów albo strona na Twojej witrynie). Ten link pojawi się na ekranie zgody na przetwarzanie danych, który pracownicy widzą po zalogowaniu.', 'gastroflowx-hub' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="gfx_blocked_message"><?php esc_html_e( 'Komunikat dla zablokowanych kont', 'gastroflowx-hub' ); ?></label></th>
+						<td>
+							<textarea id="gfx_blocked_message" name="gfx_blocked_message" rows="3" class="large-text" placeholder="<?php echo esc_attr( GFX_Account_Block::default_message() ); ?>"><?php echo esc_textarea( get_option( 'gfx_blocked_message', '' ) ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Ten tekst zobaczy osoba z zablokowanym kontem przy próbie logowania (hasłem lub kodem QR). Puste pole = tekst domyślny. Blokadę ustawia się w profilu użytkownika (Użytkownicy → edycja → „Blokada logowania”) albo zbiorczo na liście użytkowników; tam można też wpisać indywidualny komunikat.', 'gastroflowx-hub' ); ?></p>
 						</td>
 					</tr>
 					<tr>

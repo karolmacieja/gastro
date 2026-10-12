@@ -78,6 +78,10 @@ class GFX_Auth {
 		);
 
 		if ( is_wp_error( $user ) ) {
+			if ( 'gfx_account_blocked' === $user->get_error_code() ) {
+				// Konto zablokowane — pokazujemy komunikat z ustawień zamiast „złe hasło”.
+				return new WP_REST_Response( array( 'success' => false, 'blocked' => true, 'message' => $user->get_error_message() ), 403 );
+			}
 			return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Nieprawidłowy login lub hasło.', 'gastroflowx-hub' ) ), 401 );
 		}
 
@@ -131,6 +135,11 @@ class GFX_Auth {
 
 		if ( $birthdate ) {
 			update_user_meta( $user_id, 'user_birth_date', $birthdate ); // Wspólne pole z wtyczką Napiwków.
+		}
+		// Zgoda na pokazywanie urodzin w module Urodziny i powiadomienia urodzinowe.
+		// Nie dotyczy Napiwków — tam data urodzenia służy do ulgi podatkowej niezależnie od zgody.
+		if ( null !== $req->get_param( 'birthday_consent' ) && class_exists( 'GFX_Birthdays' ) ) {
+			GFX_Birthdays::set_consent( $user_id, in_array( (string) $req->get_param( 'birthday_consent' ), array( '1', 'true', 'on' ), true ) );
 		}
 
 		return new WP_REST_Response( array( 'success' => true ), 200 );

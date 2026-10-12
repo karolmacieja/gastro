@@ -107,8 +107,8 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Ekran zgody</strong> — przy pierwszym logowaniu (i po wycofaniu zgody) panel pokazuje link do polityki prywatności oraz przyciski „Wyrażam zgodę” / „Nie wyrażam zgody”. System zapisuje każdą decyzję w historii: datę, wersję polityki i adres IP.</li>
 <li><strong>Menu</strong> — menu boczne (komputer) lub dolny pasek (telefon). Widoczne kategorie zależą od ról; wejście bez uprawnień kończy się komunikatem „Brak dostępu”. Na telefonie przy więcej niż 5 modułach pasek pokazuje 4 przypięte moduły i przycisk „Więcej”, który wysuwa panel z pozostałymi modułami i wylogowaniem.</li>
 <li><strong>Strona domowa</strong> — ekran startowy panelu po zalogowaniu.</li>
-<li><strong>Moje konto</strong> — zmiana imienia, nazwiska i adresu e-mail, własne zdjęcie profilowe (ikona aparatu przy awatarze), data urodzenia, podgląd daty zgody i przycisk jej wycofania.</li>
-<li><strong>Urodziny</strong> — kalendarz miesiąca i lista nadchodzących urodzin zespołu (imię i nazwisko, data, kończony wiek). Osoby oznaczone jako nieaktywne są domyślnie ukryte. Codziennie o 9:00 system może wysłać push z życzeniami do solenizanta i ogłoszenie dla zespołu.</li>
+<li><strong>Moje konto</strong> — zmiana imienia, nazwiska i adresu e-mail, własne zdjęcie profilowe (ikona aparatu przy awatarze), data urodzenia, osobna zgoda na pokazywanie urodzin zespołowi i powiadomienia urodzinowe, podgląd daty zgody na przetwarzanie danych i przycisk jej wycofania.</li>
+<li><strong>Urodziny</strong> — kalendarz miesiąca i lista nadchodzących urodzin zespołu (imię i nazwisko, data, kończony wiek) — wyłącznie osób, które zaznaczyły zgodę w „Moje konto”. Osoby oznaczone jako nieaktywne są domyślnie ukryte. Zgoda nie wpływa na ulgę podatkową w Napiwkach. Codziennie o 9:00 system może wysłać push z życzeniami do solenizanta i ogłoszenie dla zespołu.</li>
 <li><strong>Aplikacja PWA</strong> — instalacja panelu na telefonie/komputerze jako aplikacji z ikoną; przycisk „Włącz powiadomienia” do wyrażenia zgody na push na danym urządzeniu.</li>
 </ul>
 <h3>Funkcje administracyjne (wp-admin, tylko administrator)</h3>
@@ -118,6 +118,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td>GastroFlowx → Moduły</td><td>Dodawanie modułów do panelu (nazwa, ikona, shortcode, kategoria).</td></tr>
 <tr><td>GastroFlowx → Dostęp ról</td><td>Macierz: które role widzą które kategorie panelu. Administrator ma zawsze pełny dostęp.</td></tr>
 <tr><td>GastroFlowx → Tytuły pracowników</td><td>Indywidualny tytuł wyświetlany w nagłówku (np. „Szef kuchni”).</td></tr>
+<tr><td>Użytkownicy (profil i lista)</td><td>Blokada logowania wybranego konta (pojedynczo lub zbiorczo) z opcjonalnym indywidualnym komunikatem; kolumna „Logowanie: Aktywne / Zablokowane”. Zablokowane konto zostaje ze wszystkimi danymi, a próba logowania (hasłem, kodem QR, zapamiętaną sesją) pokazuje komunikat z Ustawień ogólnych.</td></tr>
 <tr><td>GastroFlowx → Lista zgód</td><td>Bieżący status zgody każdego konta (wyrażona / wycofana / brak) z eksportem do PDF.</td></tr>
 <tr><td>GastroFlowx → Integracje</td><td>Konfiguracja Firebase Cloud Messaging dla całego systemu.</td></tr>
 <tr><td>GastroFlowx → Powiadomienia push</td><td>Zgody na push per urządzenie, historia wysyłki (ostatnie 5000 wpisów), szablony treści i ikony każdego typu powiadomienia, test „Wyślij do mnie”.</td></tr>
@@ -364,11 +365,12 @@ Przeczytaj rozdział 1 (wszyscy), rozdział 2 (zasady bezpieczeństwa danych) or
 <ol class="steps">
 <li>Sprawdź imię, nazwisko i adres e-mail — na ten adres przychodzą wiadomości o grafiku i rozliczeniach. Popraw je, jeśli są nieaktualne.</li>
 <li>Opcjonalnie ustaw zdjęcie profilowe (ikona aparatu przy awatarze).</li>
-<li>Opcjonalnie uzupełnij datę urodzenia. Jest potrzebna do poprawnego naliczenia ulgi podatkowej „do 26 lat” w Napiwkach i pojawia się w zakładce „Urodziny” (data i wiek widoczne dla zespołu).</li>
+<li>Opcjonalnie uzupełnij datę urodzenia. Jest potrzebna do poprawnego naliczenia ulgi podatkowej „do 26 lat” w Napiwkach.</li>
+<li>Jeśli chcesz, żeby zespół widział Twoje urodziny (dzień, miesiąc i wiek) w zakładce „Urodziny” i żebyś dostawał(a) powiadomienia urodzinowe, zaznacz pole <strong>zgody na pokazywanie urodzin</strong> i kliknij „Zapisz zmiany”. Bez tej zgody Twoje urodziny są ukryte — ulga w Napiwkach liczy się normalnie.</li>
 <li>Tu też widzisz datę wyrażenia zgody i przycisk jej wycofania.</li>
 </ol>
 <h3>1.4 Urodziny</h3>
-<p>W zakładce „Urodziny” zobaczysz kalendarz i listę nadchodzących urodzin zespołu. Przyciskiem „+ Dodaj datę” uzupełnisz własną datę, jeśli jej jeszcze nie ma. Jeśli nie chcesz, aby Twoje urodziny były widoczne, nie wpisuj daty lub poproś administratora o jej usunięcie (pamiętaj wtedy o wpływie na ulgę podatkową w Napiwkach).</p>
+<p>W zakładce „Urodziny” zobaczysz kalendarz i listę nadchodzących urodzin zespołu. Przyciskiem „+ Dodaj datę” uzupełnisz własną datę, jeśli jej jeszcze nie ma. W okienku możesz od razu zaznaczyć zgodę na pokazywanie urodzin. Jeśli nie chcesz, aby Twoje urodziny były widoczne, po prostu nie zaznaczaj zgody (albo odznacz ją w „Moje konto”) — data zostaje i dalej służy do ulgi podatkowej w Napiwkach.</p>
 [gfxpagebreak]
 <h2>2. Zasady bezpieczeństwa i ochrony danych — dla wszystkich</h2>
 [gfxbox color="red"]
@@ -562,7 +564,7 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <h3>13.2 Odejście pracownika</h3>
 <ol class="steps">
 <li>W Grafiku oznacz osobę jako nieaktywną; w Napiwkach wpisz „Datę zakończenia pracy”.</li>
-<li>Odbierz rolę dostępu do panelu (lub zablokuj konto) i zmień hasło — unieważnia to logowanie hasłem. Klucz QR zmienia się przy wygenerowaniu nowej karty; jeśli karta nie wróciła, wygeneruj ją ponownie, by unieważnić stary kod.</li>
+<li><strong>Zablokuj logowanie:</strong> Użytkownicy → edycja → „Blokada logowania” (albo zaznacz kilka osób na liście i wybierz akcję „Zablokuj logowanie”). Konto i wszystkie dane zostają, a pracownik zostaje od razu wylogowany ze wszystkich urządzeń i nie zaloguje się hasłem, kodem QR ani zapamiętaną sesją. Przy próbie logowania zobaczy komunikat z GastroFlowx → Ustawienia ogólne (albo indywidualny z jego profilu). Własnego konta nie da się zablokować.</li>
 <li>Dane rozliczeniowe przechowuj zgodnie z okresami z polityki prywatności, a potem usuń.</li>
 </ol>
 <h3>13.3 Konfiguracja</h3>
@@ -785,7 +787,8 @@ GFXDOC_SEED,
 <table class="gfxdoc-table">
 <tr><th style="width:24%;">Obszar</th><th>Dane</th><th style="width:22%;">Skąd pochodzą</th></tr>
 <tr><td>Konto</td><td>Login, imię i nazwisko, adres e-mail, hasło (przechowywane wyłącznie w postaci zaszyfrowanej), role i tytuł stanowiska, zdjęcie profilowe (opcjonalne).</td><td>Administrator przy zakładaniu konta; Ty w „Moje konto”.</td></tr>
-<tr><td>Data urodzenia (opcjonalna)</td><td>Data urodzenia, wyliczony wiek, data wygaśnięcia ulgi podatkowej „do 26 lat” (także ręcznie nadpisana).</td><td>Ty lub Administrator.</td></tr>
+<tr><td>Data urodzenia (opcjonalna)</td><td>Data urodzenia, wyliczony wiek, data wygaśnięcia ulgi podatkowej „do 26 lat” (także ręcznie nadpisana); osobna zgoda na pokazywanie urodzin zespołowi i powiadomienia urodzinowe (status i data zmiany).</td><td>Ty lub Administrator; zgodę zaznaczasz wyłącznie Ty.</td></tr>
+<tr><td>Blokada logowania</td><td>Informacja, że logowanie na konto jest zablokowane, data blokady i ewentualny indywidualny komunikat. Dane konta pozostają bez zmian.</td><td>Administrator.</td></tr>
 <tr><td>Zgody</td><td>Historia wyrażenia i wycofania zgody: data i godzina, wersja polityki, adres IP.</td><td>System, przy Twojej decyzji.</td></tr>
 <tr><td>Grafik</td><td>Zmiany (dzień, godziny, zmiana zamykająca, komentarz), dyspozycyjność i notatki, wnioski o dni wolne (daty, powód z listy, komentarz, decyzja i notatka menadżera), prośby o zamianę, uprawnienie do zamykania lokalu, status „nieaktywny”, prywatny klucz kanału kalendarza (iCal).</td><td>Ty, menadżerowie, algorytm generowania (wersje robocze).</td></tr>
 <tr><td>Napiwki</td><td>Dzienne kwoty napiwków z karty, serwisu i gotówki, przepracowane godziny, wyliczone pule i wypłaty, wyjątki procentowe, przypisanie do rezerwacji, kwoty fizycznie przekazane i różnice, data zakończenia pracy.</td><td>Ty, manager napiwków, osoby rozliczające bar i kuchnię.</td></tr>
@@ -806,7 +809,9 @@ GFXDOC_SEED,
 <table class="gfxdoc-table">
 <tr><th style="width:44%;">Cel</th><th>Podstawa prawna</th></tr>
 <tr><td>Prowadzenie konta i udostępnianie funkcji Systemu (grafik, napiwki, godziny, druki, menu, raporty dobowe, powiadomienia)</td><td>Zgoda — art. 6 ust. 1 lit. a RODO, wyrażana na ekranie zgody przy pierwszym logowaniu.</td></tr>
-<tr><td>Data urodzenia: ulga podatkowa w wyliczeniach napiwków i moduł Urodziny</td><td>Zgoda — art. 6 ust. 1 lit. a RODO (podanie daty jest opcjonalne).</td></tr>
+<tr><td>Data urodzenia: ulga podatkowa „do 26 lat” w wyliczeniach napiwków</td><td>Zgoda na korzystanie z Systemu — art. 6 ust. 1 lit. a RODO (podanie daty jest opcjonalne). Wpisana data jest uwzględniana w Napiwkach niezależnie od zgody na pokazywanie urodzin.</td></tr>
+<tr><td>Pokazywanie urodzin (dzień, miesiąc, wiek) zespołowi w module Urodziny oraz powiadomienia urodzinowe</td><td>Osobna, dobrowolna zgoda — art. 6 ust. 1 lit. a RODO, zaznaczana i odznaczana przez Ciebie w „Moje konto”. Bez niej Twoje urodziny nie są nikomu pokazywane ani ogłaszane.</td></tr>
+<tr><td>Blokada logowania wybranych kont (np. po zakończeniu współpracy)</td><td>Prawnie uzasadniony interes Administratora — bezpieczeństwo Systemu, art. 6 ust. 1 lit. f RODO.</td></tr>
 <tr><td>Powiadomienia push na danym urządzeniu</td><td>Zgoda — art. 6 ust. 1 lit. a RODO, wyrażana osobno przyciskiem „Włącz powiadomienia” i w przeglądarce.</td></tr>
 <tr><td>Bezpieczeństwo Systemu, rozliczalność wpisów (kto i kiedy wprowadził dane), wykazanie zgód, obsługa wniosków i naruszeń</td><td>Prawnie uzasadniony interes Administratora — art. 6 ust. 1 lit. f RODO.</td></tr>
 <tr><td>Ustalenie, dochodzenie lub obrona roszczeń związanych z rozliczeniami</td><td>Prawnie uzasadniony interes — art. 6 ust. 1 lit. f RODO.</td></tr>
@@ -820,7 +825,7 @@ GFXDOC_SEED,
 <table class="gfxdoc-table">
 <tr><th style="width:32%;">Kto</th><th>Co widzi</th></tr>
 <tr><td>Ty</td><td>Własne konto, własne zmiany, wnioski, godziny, rozliczenia napiwków i raporty.</td></tr>
-<tr><td>Cały zespół z dostępem do modułu</td><td>Opublikowany grafik całej restauracji („Gotowy grafik”), urodziny z wiekiem (jeśli podałeś datę), imię, nazwisko, tytuł i zdjęcie profilowe.</td></tr>
+<tr><td>Cały zespół z dostępem do modułu</td><td>Opublikowany grafik całej restauracji („Gotowy grafik”), urodziny z wiekiem (tylko jeśli wyraziłeś osobną zgodę na ich pokazywanie), imię, nazwisko, tytuł i zdjęcie profilowe.</td></tr>
 <tr><td>Pracownicy Twojej sekcji grafiku (kuchnia albo sala i bar)</td><td>Kalendarz offów sekcji: Twoje wnioski o dni wolne z datami, rodzajem i statusem; technicznie także wpisany powód i komentarz — dlatego wpisuj w nich tylko ogólne informacje.</td></tr>
 <tr><td>Menadżer Twojej sekcji grafiku</td><td>Twoją dyspozycyjność, wnioski z powodami, zamiany, zmiany w sekcji.</td></tr>
 <tr><td>Manager napiwków, Admin Bar / Admin Kuchnia</td><td>Kwoty napiwków, godziny i wypłaty osób, które rozliczają (w zakresie swojego działu).</td></tr>

@@ -325,3 +325,8 @@
 	gap: 6px;
 	margin: 6px 0;
 }
+
+/* ---------------- ZGODA NA URODZINY (Moje konto) ---------------- */
+.gfx-check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 14px; color: var(--gfx-gray-800); line-height: 1.45; }
+.gfx-check input[type="checkbox"] { flex: 0 0 auto; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--gfx-blue); }
+.gfx-field-check { background: var(--gfx-gray-50); border: 1px solid var(--gfx-gray-200); border-radius: 14px; padding: 12px 14px; }

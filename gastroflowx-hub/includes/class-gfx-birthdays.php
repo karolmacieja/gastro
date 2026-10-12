@@ -10,6 +10,28 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class GFX_Birthdays {
 
+	/**
+	 * Zgoda pracownika na pokazywanie urodzin w module Urodziny i na
+	 * powiadomienia urodzinowe (życzenia i ogłoszenie dla zespołu).
+	 * Nie dotyczy Napiwków — tam data urodzenia służy do ulgi podatkowej
+	 * „do 26 lat” niezależnie od tej zgody.
+	 */
+	const CONSENT_META    = 'gfx_birthday_consent';
+	const CONSENT_AT_META = 'gfx_birthday_consent_at';
+
+	public static function has_consent( $user_id ) {
+		return '1' === (string) get_user_meta( (int) $user_id, self::CONSENT_META, true );
+	}
+
+	public static function set_consent( $user_id, $agreed ) {
+		$user_id = (int) $user_id;
+		if ( $agreed === self::has_consent( $user_id ) ) {
+			return;
+		}
+		update_user_meta( $user_id, self::CONSENT_META, $agreed ? '1' : '0' );
+		update_user_meta( $user_id, self::CONSENT_AT_META, current_time( 'mysql' ) );
+	}
+
 	public static function month_names() {
 		return array(
 			__( 'Styczeń', 'gastroflowx-hub' ),
@@ -65,6 +87,10 @@ class GFX_Birthdays {
 
 		foreach ( $users as $row ) {
 			if ( $hide_inactive && get_user_meta( $row->ID, 'rs_inactive', true ) ) {
+				continue;
+			}
+			// Bez zgody pracownika urodziny nie są pokazywane ani objęte powiadomieniami.
+			if ( ! self::has_consent( $row->ID ) ) {
 				continue;
 			}
 

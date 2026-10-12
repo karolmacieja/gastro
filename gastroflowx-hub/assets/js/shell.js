@@ -273,6 +273,8 @@
 				var fd = new FormData(accountForm);
 				var payload = {};
 				fd.forEach(function (v, k) { payload[k] = v; });
+				var bdayConsent = document.getElementById('gfx-birthday-consent');
+				if (bdayConsent) payload.birthday_consent = bdayConsent.checked ? '1' : '0';
 
 				fetch(GFX_DATA.restUrl + '/account', {
 					method: 'POST',

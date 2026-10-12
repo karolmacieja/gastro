@@ -3,7 +3,7 @@
  * Plugin Name:       GastroFlowx — Panel Pracownika (SPA Hub)
  * Plugin URI:        https://gastroflowx.local
  * Description:       Spina wtyczki: Grafik pracy (restaurant-scheduler), Napiwki (system-napiwkow-spa), Lunch (weranda-lunch), Kolorowanki (weranda-kolorowanki) i Godziny pracy (employee-timesheet) w jeden spójny panel SPA z logowaniem, dostępem opartym o role oraz ustawieniami marki (nazwa, logo).
- * Version:           2.4.0
+ * Version:           2.5.0
  * Author:            Senior Full-Stack Dev
  * Text Domain:       gastroflowx-hub
  * Requires at least: 6.0
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GFX_VERSION', '2.4.0' );
+define( 'GFX_VERSION', '2.5.0' );
 define( 'GFX_DB_VERSION', '2.3.1' );
 define( 'GFX_PLUGIN_FILE', __FILE__ );
 define( 'GFX_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -26,6 +26,7 @@ require_once GFX_PLUGIN_DIR . 'includes/class-gfx-consent.php';
 require_once GFX_PLUGIN_DIR . 'includes/class-gfx-consent-admin.php';
 require_once GFX_PLUGIN_DIR . 'includes/class-gfx-settings.php';
 require_once GFX_PLUGIN_DIR . 'includes/class-gfx-auth.php';
+require_once GFX_PLUGIN_DIR . 'includes/class-gfx-account-block.php';
 require_once GFX_PLUGIN_DIR . 'includes/class-gfx-access.php';
 require_once GFX_PLUGIN_DIR . 'includes/class-gfx-birthdays.php';
 require_once GFX_PLUGIN_DIR . 'includes/class-gfx-push-log.php';
@@ -140,6 +141,7 @@ register_deactivation_hook( __FILE__, 'gfx_deactivate_plugin' );
 function gfx_init_plugin() {
 	new GFX_Settings();
 	new GFX_Auth();
+	new GFX_Account_Block();
 	new GFX_Access();
 	new GFX_Consent();
 	new GFX_Consent_Admin();
