@@ -548,7 +548,7 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <li>Kliknij „Generuj raport”. PDF pobierze się na urządzenie; możesz go też „Udostępnić” zgodnie z procedurą rozliczania utargu obowiązującą w restauracji.</li>
 <li>Jeśli Archiwum jest włączone, raport zapisze się na serwerze i będzie dostępny w zakładce Archiwum.</li>
 </ol>
-[gfxbox color="yellow"]iPhone: jeśli pojawi się „format HEIC nie jest obsługiwany”, użyj przycisku „Zrób zdjęcie” albo ustaw Ustawienia → Aparat → Formaty → „Najbardziej zgodne”.[/gfxbox]
+[gfxbox color="blue"]Zdjęcia z iPhone'a w formacie HEIC możesz dodawać normalnie — także na komputerze w Chrome czy Edge. Wtyczka sama zamieni je na JPEG (przy pierwszym zdjęciu HEIC może to potrwać kilka sekund).[/gfxbox]
 [gfxpagebreak]
 [gfxbox color="party"]
 <h2>13. Administrator</h2>
