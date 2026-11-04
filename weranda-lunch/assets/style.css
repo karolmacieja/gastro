@@ -1,0 +1,172 @@
+/* Design system 1:1 z wtyczki "System Napiwków" (system-napiwkow-spa) — te same
+   zmienne CSS, kolory, promienie, cienie i typografia, żeby generator lunchu
+   wizualnie stanowił jedną spójną całość z resztą panelu CRM. */
+
+#weranda-lunch-app {
+    --rs-bg:#F9FAFB; --rs-surface:#FFFFFF; --rs-surface-alt:#F9FAFB; --rs-border:#E5E7EB;
+    --rs-border-light:#DBEAFE; --rs-border-mid:#BFDBFE; --rs-border-strong:#60A5FA;
+    --rs-text:#1F2937; --rs-text-muted:#6B7280; --rs-text-faint:#9CA3AF;
+    --rs-accent:#2563EB; --rs-accent-dark:#1D4ED8; --rs-accent-soft:#EFF6FF; --rs-accent-text:#1D4ED8;
+    --rs-success:#15803D; --rs-success-soft:#F0FDF4; --rs-success-border:#BBF7D0;
+    --rs-danger:#EF4444; --rs-danger-soft:#FEF2F2; --rs-warning:#F59E0B; --rs-warning-soft:#FFFBEB;
+    --rs-radius:12px; --rs-radius-lg:24px; --rs-radius-md:8px;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px; line-height:1.5; color:var(--rs-text);
+    box-sizing:border-box;
+}
+#weranda-lunch-app, #weranda-lunch-app *{ box-sizing:border-box; }
+#weranda-lunch-app img, #weranda-lunch-app svg{ max-width:100%; }
+#weranda-lunch-app h1, #weranda-lunch-app h2, #weranda-lunch-app h3, #weranda-lunch-app h4{ font-weight:700; }
+
+@keyframes wlFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+#weranda-lunch-app { animation: wlFadeIn 0.3s ease-in-out; }
+
+/* Zakładki sekcji (Generator Menu / Szablony PDF) — pełne pigułki, jak snspa-tabs */
+.wl-tabs{ display:flex; gap:8px; padding-bottom:16px; flex-wrap:wrap; }
+.wl-tab{ border:1px solid var(--rs-border); background:var(--rs-surface); color:var(--rs-text-muted);
+    padding:9px 18px; border-radius:999px; font-size:14px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px; transition:transform .15s ease, background .15s ease, color .15s ease; }
+.wl-tab:active{ transform:scale(.97); }
+.wl-tab.active{ background:var(--rs-accent); border-color:var(--rs-accent); color:#fff; box-shadow:0 1px 2px rgba(37,99,235,.3); }
+
+/* Karty */
+.wl-card{ background:var(--rs-surface); border-radius:var(--rs-radius-lg); padding:22px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04); border:1px solid var(--rs-border); }
+.wl-card h3{ margin:0 0 20px; font-size:20px; font-weight:700; color:var(--rs-text); }
+
+/* Etykiety pól i pola formularza */
+.wl-label{ display:block; font-size:15px; font-weight:600; color:var(--rs-text); margin-bottom:8px; }
+.wl-input, .wl-textarea, .wl-select{
+    width:100%; padding:12px 14px; border:1px solid var(--rs-border); border-radius:var(--rs-radius-md);
+    font-family:inherit; font-size:16px; line-height:1.5; background:var(--rs-surface-alt); color:var(--rs-text);
+    box-sizing:border-box; transition:border-color .15s ease, background .15s ease;
+}
+.wl-input:focus, .wl-textarea:focus, .wl-select:focus{ outline:none; border-color:var(--rs-accent); background:#fff; }
+.wl-textarea{ resize:vertical; }
+
+.wl-select{
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+    height:52px; padding-right:38px;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+}
+.wl-select-sm{ height:40px; font-size:14px; padding:0 30px 0 10px; background-position:right 8px center; background-size:14px; }
+
+/* Tagi produktów (Polecamy) */
+.wl-tagbox{ border:1px dashed var(--rs-border); border-radius:var(--rs-radius); padding:14px; background:var(--rs-surface-alt);
+    margin-bottom:12px; display:flex; flex-wrap:wrap; gap:8px; }
+.wl-tag{ display:flex; align-items:center; gap:4px; border-radius:999px; padding:5px 6px 5px 14px; cursor:pointer;
+    transition:background .15s ease; border:1px solid var(--rs-border); background:var(--rs-surface); box-shadow:0 1px 2px rgba(0,0,0,.03); }
+.wl-tag.active{ background:var(--rs-accent); border-color:var(--rs-accent); }
+.wl-tag label{ display:flex; align-items:center; gap:8px; cursor:pointer; padding:2px 0; }
+.wl-tag span{ font-size:15px; font-weight:500; color:var(--rs-text); }
+.wl-tag.active span{ color:#fff; font-weight:700; }
+.wl-tag input[type=checkbox]{ width:16px; height:16px; accent-color:var(--rs-accent); }
+.wl-tag.active input[type=checkbox]{ accent-color:#fff; }
+.wl-tag-del{ background:transparent; border:none; padding:6px; border-radius:999px; cursor:pointer; font-size:12px; color:var(--rs-text-faint); }
+.wl-tag-del:hover{ color:var(--rs-danger); }
+.wl-tag.active .wl-tag-del{ color:#BFDBFE; }
+.wl-tag.active .wl-tag-del:hover{ color:#fff; }
+
+/* Przyciski */
+.wl-btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:var(--rs-radius-md);
+    font-family:inherit; font-weight:700; font-size:14px; cursor:pointer; padding:10px 18px;
+    transition:transform .1s ease, background .15s ease; }
+.wl-btn:active{ transform:scale(.98); }
+.wl-btn:disabled{ opacity:.5; cursor:not-allowed; }
+.wl-btn-primary{ background:var(--rs-accent); color:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+.wl-btn-primary:hover{ background:var(--rs-accent-dark); }
+.wl-btn-secondary{ background:var(--rs-surface-alt); color:var(--rs-text); border:1px solid var(--rs-border); }
+.wl-btn-secondary:hover{ background:var(--rs-border-light); }
+.wl-btn-danger{ background:var(--rs-danger-soft); color:var(--rs-danger); border:1px solid #FECACA; }
+.wl-btn-danger:hover{ background:#FEE2E2; }
+.wl-btn-warning{ background:var(--rs-warning-soft); color:#B45309; border:1px solid #FDE68A; }
+.wl-btn-warning:hover{ background:#FEF3C7; }
+.wl-btn-full{ width:100%; padding:15px; font-size:15px; }
+
+/* Duży przycisk zapisu (jak snspa-save) */
+.wl-save{ width:100%; margin-top:8px; background:var(--rs-accent); color:#fff; border:none; padding:15px;
+    border-radius:var(--rs-radius); font-weight:700; cursor:pointer; font-size:16px; box-shadow:0 1px 2px rgba(0,0,0,.05);
+    transition:transform .1s ease, background .15s ease; display:flex; align-items:center; justify-content:center; gap:8px; }
+.wl-save:hover{ background:var(--rs-accent-dark); }
+.wl-save:active{ transform:scale(.98); }
+.wl-save:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* Podgląd na żywo */
+.wl-preview-body{ background:var(--rs-surface-alt); border-radius:var(--rs-radius); padding:20px; min-height:400px;
+    display:flex; align-items:center; justify-content:center; position:relative; }
+.wl-spinner{ width:40px; height:40px; border:4px solid var(--rs-border); border-top-color:var(--rs-accent); border-radius:50%;
+    animation:wlSpin 1s linear infinite; }
+@keyframes wlSpin{ to{ transform:rotate(360deg); } }
+#pdf-preview-canvas{ max-width:100%; height:auto; box-shadow:0 4px 14px rgba(0,0,0,.12); border-radius:8px; background:#fff; }
+
+/* Wiadomości / błędy */
+.wl-msg{ font-size:14px; padding:12px 16px; border-radius:var(--rs-radius); margin-bottom:16px; line-height:1.5; }
+.wl-msg-error{ background:var(--rs-danger-soft); color:var(--rs-danger); border:1px solid #FECACA; }
+.wl-msg-success{ background:var(--rs-success-soft); color:var(--rs-success); border:1px solid var(--rs-success-border); }
+
+/* Archiwum */
+.wl-archive-row{ background:var(--rs-surface); border:1px solid var(--rs-border); border-radius:var(--rs-radius);
+    padding:16px; display:flex; flex-direction:column; gap:14px; box-shadow:0 1px 2px rgba(0,0,0,.03); transition:box-shadow .15s ease; }
+.wl-archive-row:hover{ box-shadow:0 4px 10px rgba(0,0,0,.06); }
+.wl-archive-label{ display:block; font-size:11px; font-weight:700; color:var(--rs-text-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.wl-archive-value{ font-size:15px; font-weight:600; color:var(--rs-text); }
+@media (min-width:768px){
+    .wl-archive-row{ flex-direction:row; align-items:center; justify-content:space-between; }
+    .wl-archive-info{ display:flex; gap:40px; flex:1; }
+}
+
+/* Zakładka szablonów */
+.wl-badge{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.03em; background:var(--rs-text); color:#fff; }
+.wl-tpl-card{ background:var(--rs-surface); border-radius:var(--rs-radius-lg); padding:22px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+    border:1px solid var(--rs-border); transition:opacity .15s ease; }
+.wl-tpl-card.is-default{ border:2px solid var(--rs-accent); box-shadow:0 4px 10px rgba(37,99,235,.08); }
+.wl-tpl-card.is-dashed{ border-style:dashed; background:var(--rs-surface-alt); }
+.wl-tpl-name{ padding:8px 14px; border:1px solid var(--rs-border); border-radius:var(--rs-radius-md); font-weight:700;
+    color:var(--rs-text); background:var(--rs-surface-alt); font-family:inherit; font-size:15px; }
+.wl-tpl-url{ font-size:12px; color:var(--rs-text-faint); word-break:break-all; }
+
+.wl-coord-table{ width:100%; border-collapse:collapse; text-align:left; min-width:680px; }
+.wl-coord-table th{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--rs-text-faint); font-weight:700; padding-bottom:8px; }
+.wl-coord-table td{ padding:4px; }
+.wl-coord-table input{ width:100%; padding:8px 10px; border:1px solid var(--rs-border); border-radius:var(--rs-radius-md);
+    font-size:14px; color:var(--rs-text); background:var(--rs-surface); }
+.wl-coord-table input:focus{ outline:none; border-color:var(--rs-accent); }
+.wl-coord-table input::-webkit-inner-spin-button, .wl-coord-table input::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+.wl-coord-table input{ -moz-appearance:textfield; }
+
+.wl-file-pill{ background:var(--rs-surface-alt); border:1px solid var(--rs-border); color:var(--rs-text); padding:9px 16px;
+    border-radius:var(--rs-radius-md); font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+.wl-file-pill:hover{ background:var(--rs-border-light); }
+
+@media print {
+    @page { margin: 0; }
+    /* Pasek z przyciskiem "Wróć" (drukowanie na telefonie/PWA) jest wyłącznie
+       do sterowania na ekranie — nigdy nie trafia na sam wydruk. */
+    .weranda-lunch-return-bar {
+        display: none !important;
+    }
+}
+
+/* ---- 2.0.0: generator z danych + Ustawienia PDF ---- */
+.wl-price-note{ font-size:14px; color:var(--rs-text-muted); background:var(--rs-accent-soft); border:1px solid var(--rs-border); border-radius:var(--rs-radius-md); padding:10px 14px; }
+.wl-price-note strong{ color:var(--rs-text); }
+.wl-price-note a{ color:var(--rs-accent); font-weight:600; }
+.wl-msg-warn{ background:var(--rs-warning-soft); color:var(--rs-text); border:1px solid #FDE68A; margin:0 0 10px; }
+.wl-grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+.wl-grid4{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.wl-grid4 .wl-label{ font-size:13px; }
+.wl-hint{ font-size:13px; color:var(--rs-text-muted); margin:10px 0 0; line-height:1.45; }
+.wl-hint-inline{ font-size:12px; font-weight:400; color:var(--rs-text-muted); }
+.wl-check{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--rs-text); cursor:pointer; flex-wrap:wrap; }
+.wl-check input[type=checkbox]{ width:18px; height:18px; accent-color:var(--rs-accent); }
+.wl-check input[type=number]{ padding:4px 6px; border:1px solid var(--rs-border); border-radius:6px; }
+.wl-select.wl-select-sm{ padding:7px 10px; font-size:13px; min-width:170px; }
+.wl-layout-table td{ vertical-align:middle; }
+.wl-layout-table td input[type=number]{ min-width:72px; }
+.wl-layout-table td input[type=checkbox]{ width:18px; height:18px; accent-color:var(--rs-accent); }
+.wl-settings-actions{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.wl-ok-text{ color:var(--rs-success); font-size:14px; font-weight:600; }
+.wl-err-text{ color:var(--rs-danger); font-size:14px; font-weight:600; }
+.wl-input.wl-color{ padding:4px; height:42px; }

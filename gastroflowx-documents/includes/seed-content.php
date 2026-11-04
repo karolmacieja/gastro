@@ -78,7 +78,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <tr><td><strong>Grafik Pracy</strong><br/><span class="small">restaurant-scheduler</span></td><td>Grafik zmian, dyspozycyjność, dni wolne (offy), zamiany, automatyczne generowanie, kalendarz iCal, PDF.</td><td>Grafik</td></tr>
 <tr><td><strong>System Napiwków</strong><br/><span class="small">system-napiwkow-spa</span></td><td>Rozliczanie napiwków z karty, serwisu i gotówki między kelnerami, barem i kuchnią; raporty miesięczne.</td><td>Napiwki</td></tr>
 <tr><td><strong>Ewidencja Godzin</strong><br/><span class="small">employee-timesheet</span></td><td>Własne godziny pracy dzień po dniu (podpowiedź z Grafiku), stawka godzinowa, napiwki z karty, serwisu i gotówki, premia, przelew, kalendarz miesiąca.</td><td>Godziny</td></tr>
-<tr><td><strong>Weranda Lunch</strong><br/><span class="small">weranda-lunch</span></td><td>Generator PDF codziennego menu lunchowego na szablonach graficznych.</td><td>Lunch</td></tr>
+<tr><td><strong>Weranda Lunch</strong><br/><span class="small">weranda-lunch</span></td><td>Generator PDF karty lunchowej budowanej z danych (ceny, teksty, czcionki i logo w Ustawieniach PDF).</td><td>Lunch</td></tr>
 <tr><td><strong>Menu GastroFlowX</strong><br/><span class="small">gastroflowx-menu</span></td><td>Baza dań PL/EN, kreator karty menu, „Wersje Standardowe”, PDF A4.</td><td>Menu</td></tr>
 <tr><td><strong>Weranda Kolorowanki</strong><br/><span class="small">weranda-kolorowanki</span></td><td>Biblioteka kolorowanek dla dzieci z drukiem grupowym.</td><td>Kolorowanki</td></tr>
 <tr><td><strong>GastroFlowX Pliki</strong><br/><span class="small">gastroflowx-pliki</span></td><td>Biblioteka druków: raporty utargu, listy obowiązków, checklisty HACCP; edytor i druk grupowy.</td><td>Pliki / Dokumenty</td></tr>
@@ -196,11 +196,11 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 </ul>
 <h2>7. Generator Menu Lunchowego [gfxbadge]rola „lunch” / administrator[/gfxbadge]</h2>
 <ul>
-<li><strong>Szkic</strong> — zupa, waga, danie lunchowe i rekomendacja; szkic zapisuje się na serwerze, więc można wrócić do niego później.</li>
+<li><strong>Szkic</strong> — zupa dnia, gramatura, opis lunchu i „polecamy”; zapisuje się sam na serwerze, więc można wrócić do niego później.</li>
 <li><strong>Baza produktów (checklista)</strong> — pozycje do szybkiego wybierania; dodawanie i usuwanie.</li>
-<li><strong>Generowanie PDF</strong> na wybranym szablonie graficznym (tekst nanoszony na wzór PDF), z podglądem.</li>
+<li><strong>Generowanie PDF</strong> — karta A4 z dwiema identycznymi połówkami do przecięcia, budowana w całości z danych (bez szablonu PDF), z podglądem na żywo. Bloki układają się same: dłuższa zupa przesuwa resztę w dół, a gdy treść nie mieści się nad stopką, jest automatycznie zmniejszana (do 70%).</li>
 <li><strong>Archiwum</strong> — wygenerowane pliki PDF zapisane na serwerze do ponownego pobrania.</li>
-<li><strong>Szablony PDF</strong> (administrator) — pozycja i rozmiar każdego pola, wybór szablonu domyślnego, wgrywanie nowych wzorów — z frontu, bez wp-admin.</li>
+<li><strong>Ustawienia PDF</strong> (administrator, z frontu) — <strong>ceny</strong>, stałe teksty (nagłówki „zupa / przy zakupie lunchu”, „lunch dnia”, „polecamy”, stopka), czcionka, rozmiar, interlinia i odstęp każdego elementu, logo z biblioteki mediów, pozycje na stronie i linia cięcia. Domyślne wartości odwzorowują szablon z Canvy 1:1; „Przywróć domyślne” wraca do nich. Czcionki (Poppins, Barlow Condensed) i logo Weranda są dołączone do wtyczki.</li>
 </ul>
 <h2>8. Menu (karta dań PL/EN) [gfxbadge]Menedżer menu / manager[/gfxbadge]</h2>
 <ul>
@@ -314,7 +314,7 @@ Dokument opisuje, z czego składa się system GastroFlowx, jak działają jego m
 <li><strong>Raport miesięczny:</strong> po zakończeniu miesiąca dla każdej sekcji przygotowywany jest raport rozliczenia napiwków. Kwoty w raporcie są <strong>jawne dla wszystkich pracowników danej sekcji</strong> uczestniczących w podziale — zgodnie z §3 „Regulaminu podziału i rozliczania napiwków”.</li>
 <li><strong>Pracodawca nie otrzymuje danych z Systemu</strong> i nie ma do niego dostępu. Prowadzi własną, odrębną dokumentację wynagrodzeń i rozliczeń.</li>
 </ul>
-[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.2.0, Lunch 1.0.12, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
+[gfxnote]Dokument przygotowany na podstawie analizy kodu wtyczek systemu GastroFlowx (wersje: Hub 1.2.1, Activity Tracker 1.0.0, Grafik 1.5.0, Napiwki 1.2.3, Ewidencja Godzin 1.2.0, Lunch 2.0.0, Menu 1.5.3, Kolorowanki 1.0.20, Pliki 1.1.3, Dokumenty 1.0.1, Access Cards 1.4.0, Documents 1.3.0). Instrukcje krok po kroku zawiera dokument „Instrukcje dla pracowników”.[/gfxnote]
 GFXDOC_SEED,
 		),
 		array(
@@ -509,10 +509,10 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 [/gfxbox]
 <h3>10.1 Menu lunchowe</h3>
 <ol class="steps">
-<li>Zakładka <strong>Lunch</strong> → uzupełnij szkic: zupa, waga, danie lunchowe, rekomendacja. Pozycje możesz wybierać z bazy produktów (checklisty) i dodawać nowe.</li>
-<li>Wybierz szablon i sprawdź podgląd.</li>
+<li>Zakładka <strong>Lunch</strong> → wpisz zupę dnia, gramaturę i opis lunchu, a w „Polecamy” — pozycje (jedna w linii) albo zaznacz je w bazie produktów pod polem. Szkic zapisuje się sam.</li>
+<li>Sprawdź podgląd po prawej — karta układa się sama (dłuższa zupa przesuwa resztę w dół). Nad formularzem widzisz aktualne ceny.</li>
 <li>Wygeneruj PDF i wydrukuj. Plik trafia do <strong>Archiwum</strong>, skąd można go pobrać ponownie lub usunąć.</li>
-<li>Szablony graficzne (pozycje i rozmiary tekstu) zmienia administrator.</li>
+<li>Ceny, nagłówki, czcionki i wygląd karty zmienia administrator w zakładce <strong>Ustawienia PDF</strong> — nie trzeba już nowego szablonu z Canvy.</li>
 </ol>
 <h3>10.2 Kolorowanki</h3>
 <ol class="steps">
@@ -580,13 +580,18 @@ W systemie są dane o zarobkach, godzinach pracy i nieobecnościach Twoich i Two
 <li>Eksport CSV przechowuj bezpiecznie i usuwaj po wykorzystaniu.</li>
 <li>Pamiętaj, że logowanie kodem QR nie trafia do dziennika jako „Logowanie”.</li>
 </ul>
-<h3>13.5 Ewidencja godzin — połączenie z Grafikiem i Napiwkami</h3>
+<h3>13.5 Lunch — ceny i wygląd karty</h3>
+<ul>
+<li>Zakładka Lunch → <strong>Ustawienia PDF</strong>: zmień cenę zupy lub lunchu (np. „16 zł”), sprawdź podgląd i kliknij „Zapisz ustawienia” — od razu obowiązuje przy każdym generowaniu.</li>
+<li>Tam też zmienisz nagłówki, stopkę, czcionki, rozmiary, odstępy, logo (z biblioteki mediów) i linię cięcia. „Anuluj zmiany” cofa niezapisane zmiany, a „Przywróć domyślne (Canva)” wraca do układu z szablonu Canvy (po zapisie).</li>
+</ul>
+<h3>13.6 Ewidencja godzin — połączenie z Grafikiem i Napiwkami</h3>
 <ul>
 <li>Połączenie jest wbudowane w Ewidencję (wersja 1.1.0+) — wystarczy, że Grafik i Napiwki są aktywne. Stan połączeń widać w zakładce Ustawienia Ewidencji.</li>
 <li>„Udział kuchni %” i „Udział baru %” w ustawieniach dotyczą <u>tylko</u> napiwków wpisanych ręcznie — kwoty z Napiwków mają już podatek i udziały policzone według zasad Napiwków.</li>
 <li>W sekcji „Zarządzanie” możesz na dany dzień wpisać ręczne godziny podpowiedzi lub ręczne napiwki brutto — zastępują Grafik / Napiwki. Puste pole i „Zapisz” usuwa ręczny wpis.</li>
 </ul>
-<h3>13.6 Obowiązki związane z danymi</h3>
+<h3>13.7 Obowiązki związane z danymi</h3>
 <ul>
 <li>Regularne aktualizacje WordPressa i wtyczek, kopie zapasowe, silne hasło i ograniczenie liczby kont administratora.</li>
 <li>Obsługa wniosków pracowników (dostęp, sprostowanie, usunięcie) — w ciągu miesiąca.</li>

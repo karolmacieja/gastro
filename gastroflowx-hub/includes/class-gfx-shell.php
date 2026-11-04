@@ -65,6 +65,12 @@ class GFX_Shell {
 		if ( ! defined( 'WERANDA_LUNCH_URL' ) ) {
 			return; // Wtyczka nieaktywna.
 		}
+		// Lunch 2.0+ ładuje swoje zasoby sam (generator z danych, lokalne czcionki i biblioteki).
+		if ( function_exists( 'weranda_lunch_enqueue_assets_now' ) ) {
+			weranda_lunch_enqueue_assets_now();
+			return;
+		}
+		// Starsze wersje Lunchu (szablony PDF):
 		wp_enqueue_script( 'vue3', 'https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js', array(), '3.4.21', true );
 		wp_enqueue_script( 'pdf-lib', 'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js', array(), '1.17.1', true );
 		wp_enqueue_script( 'fontkit', 'https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.min.js', array(), '0.0.4', true );
