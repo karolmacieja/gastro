@@ -20,6 +20,13 @@ class GFXM_Install {
 	}
 
 	public static function activate() {
+		// Ponowna aktywacja starszej wersji (np. po wgraniu ZIP-a) — najpierw
+		// migracje, inaczej zapis numeru wersji poniżej by je pominął.
+		$from = get_option( 'gfxm_db_version' );
+		if ( $from && version_compare( $from, GFXM_DB_VERSION, '<' ) ) {
+			self::maybe_upgrade();
+			return;
+		}
 		self::create_tables();
 		self::register_role();
 		self::default_options();
@@ -59,7 +66,11 @@ class GFXM_Install {
 			if ( $from && version_compare( $from, '1.6.0', '<' ) ) {
 				self::migrate_160();
 			}
+			if ( $from && version_compare( $from, '1.6.1', '<' ) ) {
+				self::migrate_161();
+			}
 			self::import_default_logos();
+			self::import_logos_v2();
 		} catch ( \Throwable $e ) {
 			error_log( 'GastroFlowx Menu: błąd migracji: ' . $e->getMessage() ); // phpcs:ignore
 		}
@@ -127,7 +138,8 @@ class GFXM_Install {
 	public static function migrate_160() {
 		$cats = get_option( 'gfxm_categories', array() );
 		foreach ( (array) $cats as $i => $c ) {
-			$cats[ $i ] = array_merge( $c, self::default_sub_offsets( isset( $c['id'] ) ? $c['id'] : '' ) );
+			$off        = self::default_sub_offsets( isset( $c['id'] ) ? $c['id'] : '' );
+			$cats[ $i ] = isset( $c['sub_dx'] ) ? array_merge( $off, $c ) : array_merge( $c, $off );
 			if ( isset( $c['id'] ) && 'mains' === $c['id'] && isset( $c['sub_pl'] ) && 'dania' === $c['sub_pl'] ) {
 				$cats[ $i ]['sub_pl'] = 'autorskie';
 			}
@@ -162,6 +174,75 @@ class GFXM_Install {
 	}
 
 	/**
+	 * Układ kategorii wg szablonu InDesign: kolumna, wyrównanie, przesunięcie
+	 * w poziomie (dx, px) i własny odstęp nazwa → pierwsze danie (gap, px;
+	 * '' = z Ustawień PDF). W prawej kolumnie szablon ma 28,4 pt zamiast 30,9 pt.
+	 */
+	public static function default_cat_layout( $id ) {
+		$map = array(
+			'start'    => array( 'column' => 'left',  'align' => 'top',    'dx' => 0,     'gap' => '' ),
+			'starters' => array( 'column' => 'left',  'align' => 'bottom', 'dx' => -2.03, 'gap' => '' ),
+			'mains'    => array( 'column' => 'right', 'align' => 'top',    'dx' => 0,     'gap' => 16.97 ),
+			'desserts' => array( 'column' => 'right', 'align' => 'bottom', 'dx' => 0,     'gap' => 16.97 ),
+		);
+		return isset( $map[ $id ] ) ? $map[ $id ] : array( 'dx' => 0, 'gap' => '' );
+	}
+
+	/**
+	 * → 1.6.1: cały układ jak w szablonie InDesign — prowadnice, rozmiary
+	 * i interlinia dań, odstępy, logo (nowe pliki v2 wycięte z szablonu),
+	 * kolumny i wyrównanie kategorii domyślnych. Nazwy, podtytuły, dania
+	 * i wersje zostają bez zmian.
+	 */
+	public static function migrate_161() {
+		$def  = self::default_settings();
+		$cats = get_option( 'gfxm_categories', array() );
+		foreach ( (array) $cats as $i => $c ) {
+			$id  = isset( $c['id'] ) ? $c['id'] : '';
+			$fix = array_merge( self::default_cat_layout( $id ), self::default_sub_offsets( $id ) );
+			// Kategorie z szablonu dostają jego układ; własne zachowują swoje wartości.
+			$cats[ $i ] = in_array( $id, array( 'start', 'starters', 'mains', 'desserts' ), true ) ? array_merge( $c, $fix ) : array_merge( $fix, $c );
+		}
+		update_option( 'gfxm_categories', array_values( (array) $cats ) );
+
+		$s = get_option( 'gfxm_settings', array() );
+		$s = is_array( $s ) ? $s : array();
+		$keys = array( 'header_top', 'content_top', 'content_bottom', 'footer_top', 'left_x', 'left_end', 'right_x', 'right_end', 'heading_gap', 'dish_gap', 'name_weight', 'name_pt', 'desc_pt', 'text_lh', 'text_track', 'heading_weight', 'head_pt', 'head_track', 'sub_font', 'sub_upper', 'sub_pt', 'sub_track' );
+		$s['layout'] = array_merge( isset( $s['layout'] ) && is_array( $s['layout'] ) ? $s['layout'] : array(), array_intersect_key( $def['layout'], array_flip( $keys ) ) );
+		foreach ( array( 'header', 'footer' ) as $k ) {
+			$s[ $k ] = array_merge( $def[ $k ], array( 'id' => isset( $s[ $k ]['id'] ) ? (int) $s[ $k ]['id'] : 0 ) );
+		}
+		update_option( 'gfxm_settings', $s );
+		delete_option( 'gfxm_font_heights' );
+		// Nowe logo importujemy na 'init' (import_logos_v2 w maybe_upgrade).
+		delete_option( 'gfxm_logos_v2_imported' );
+	}
+
+	/**
+	 * Logo v2 (wycięte z szablonu InDesign) → biblioteka mediów i ustawienia
+	 * nagłówka/stopki. Stare załączniki zostają w bibliotece. Jedna próba.
+	 */
+	public static function import_logos_v2() {
+		global $wp_rewrite;
+		if ( ! ( $wp_rewrite instanceof WP_Rewrite ) || get_option( 'gfxm_logos_v2_imported' ) ) {
+			return;
+		}
+		update_option( 'gfxm_logos_v2_imported', 1 );
+		update_option( 'gfxm_logos_imported', 1 );
+		$s = get_option( 'gfxm_settings', array() );
+		$s = is_array( $s ) ? $s : array();
+		$map = array( 'header' => array( 'logo-naglowek-v2.png', 'Weranda — logo nagłówka menu (2026)' ), 'footer' => array( 'logo-stopka-v2.png', 'Weranda — logo stopki menu (2026)' ) );
+		foreach ( $map as $key => $f ) {
+			$id = self::sideload_asset( GFXM_DIR . 'assets/img/' . $f[0], $f[1] );
+			if ( $id ) {
+				$s[ $key ]       = isset( $s[ $key ] ) && is_array( $s[ $key ] ) ? $s[ $key ] : array();
+				$s[ $key ]['id'] = $id;
+			}
+		}
+		update_option( 'gfxm_settings', $s );
+	}
+
+	/**
 	 * Dołączone logo Weranda (assets/img) trafiają do biblioteki mediów i są
 	 * ustawiane jako nagłówek/stopka — tylko gdy pole jest puste.
 	 */
@@ -172,11 +253,12 @@ class GFXM_Install {
 			return;
 		}
 		update_option( 'gfxm_logos_imported', 1 ); // tylko jedna próba
+		update_option( 'gfxm_logos_v2_imported', 1 ); // świeża instalacja dostaje od razu logo v2
 		$s = get_option( 'gfxm_settings', array() );
 		if ( ! is_array( $s ) ) {
 			return;
 		}
-		$map     = array( 'header' => 'logo-naglowek.png', 'footer' => 'logo-stopka.png' );
+		$map     = array( 'header' => 'logo-naglowek-v2.png', 'footer' => 'logo-stopka-v2.png' );
 		$changed = false;
 		foreach ( $map as $key => $file ) {
 			if ( ! empty( $s[ $key ]['id'] ) ) {
@@ -286,34 +368,35 @@ class GFXM_Install {
 		// temu ostatnie pozycje obu kolumn kończą się na tej samej linii.
 		$cats = array(
 			array( 'id' => 'start',    'name_pl' => 'Zupy',       'sub_pl' => 'na początek', 'name_en' => 'Soups',    'sub_en' => 'to begin',  'column' => 'left',  'align' => 'top' ),
-			array( 'id' => 'starters', 'name_pl' => 'Przystawki', 'sub_pl' => 'oryginalne',  'name_en' => 'Starters', 'sub_en' => 'signature', 'column' => 'right', 'align' => 'top' ),
-			array( 'id' => 'mains',    'name_pl' => 'Główne',     'sub_pl' => 'autorskie',   'name_en' => 'Mains',    'sub_en' => 'signature', 'column' => 'left',  'align' => 'bottom' ),
+			array( 'id' => 'starters', 'name_pl' => 'Przystawki', 'sub_pl' => 'oryginalne',  'name_en' => 'Starters', 'sub_en' => 'signature', 'column' => 'left',  'align' => 'bottom' ),
+			array( 'id' => 'mains',    'name_pl' => 'Główne',     'sub_pl' => 'autorskie',   'name_en' => 'Mains',    'sub_en' => 'signature', 'column' => 'right', 'align' => 'top' ),
 			array( 'id' => 'desserts', 'name_pl' => 'Słodkie',    'sub_pl' => 'desery',      'name_en' => 'Sweet',    'sub_en' => 'desserts',  'column' => 'right', 'align' => 'bottom' ),
 		);
 		foreach ( $cats as $i => $c ) {
-			$cats[ $i ] = array_merge( $c, self::default_sub_offsets( $c['id'] ) );
+			$cats[ $i ] = array_merge( $c, self::default_sub_offsets( $c['id'] ), self::default_cat_layout( $c['id'] ) );
 		}
 		return $cats;
 	}
 
 	public static function default_settings() {
 		return array(
-			// Logo nagłówka: prowadnice Canvy 56–186 → wysokość 130 px.
-			'header' => array( 'id' => 0, 'url' => '', 'width' => 0, 'width_unit' => 'auto', 'height' => 130, 'height_unit' => 'px' ),
-			// Logo stopki: prowadnice 255–540 → szerokość 285 px.
-			'footer' => array( 'id' => 0, 'url' => '', 'width' => 285, 'width_unit' => 'px', 'height' => 0, 'height_unit' => 'auto' ),
-			// Wszystko w px na A4 794 × 1123 — 1:1 z prowadnicami w Canvie.
+			// Logo nagłówka (logo-naglowek-v2.png): wys. 116,96 px = 87,7 pt jak w szablonie InDesign.
+			'header' => array( 'id' => 0, 'url' => '', 'width' => 0, 'width_unit' => 'auto', 'height' => 116.96, 'height_unit' => 'px' ),
+			// Logo stopki (logo-stopka-v2.png): szer. 272,56 px = 204,4 pt.
+			'footer' => array( 'id' => 0, 'url' => '', 'width' => 272.56, 'width_unit' => 'px', 'height' => 0, 'height_unit' => 'auto' ),
+			// Wszystko w px na A4 794 × 1123 (1 pt = 4/3 px) — zmierzone z szablonu
+			// InDesign (listopad 2026), zgodność linii bazowych ±0,05 pt.
 			'layout' => array(
-				'header_top'     => 56,   // górna krawędź logo nagłówka
-				'content_top'    => 300,  // górna prowadnica treści
-				'content_bottom' => 835,  // dolna prowadnica treści (tu kończą się kolumny)
-				'footer_top'     => 934,  // górna krawędź logo stopki
-				'left_x'         => 63,   // lewa kolumna: od
-				'left_end'       => 373,  // lewa kolumna: do
-				'right_x'        => 429,  // prawa kolumna: od
-				'right_end'      => 718,  // prawa kolumna: do
-				'heading_gap'    => 12,   // nagłówek kategorii → pierwsze danie
-				'dish_gap'       => 6,    // odstęp między daniami
+				'header_top'     => 62.32,  // górna krawędź logo nagłówka (46,74 pt)
+				'content_top'    => 255.75, // góra bloku kategorii → linia bazowa „zupy” na 210,3 pt
+				'content_bottom' => 888.64, // dół kolumn → ostatnia linia bazowa na 663,9 pt
+				'footer_top'     => 964.8,  // górna krawędź logo stopki (723,6 pt)
+				'left_x'         => 63.16,  // lewa kolumna: od (47,37 pt)
+				'left_end'       => 374.83, // lewa kolumna: do — 42 znaki Fabrikat Mono 10 pt w wierszu
+				'right_x'        => 408.05, // prawa kolumna: od (306,04 pt)
+				'right_end'      => 749.05, // prawa kolumna: do — 46 znaków w wierszu
+				'heading_gap'    => 20.25,  // nagłówek kategorii → pierwsze danie (linie bazowe 30,9 pt)
+				'dish_gap'       => 7.56,   // odstęp między daniami: 2 mm
 				'category_gap'   => 34,   // minimalny odstęp między kategoriami w kolumnie
 				'fit_page'       => 1,    // zmniejsz treść (do 70%), gdy się nie mieści
 				'heading_weight' => 'Black',
@@ -322,8 +405,9 @@ class GFXM_Install {
 				'sub_font'       => 'SweetBelly-Sans', // krój podtytułów (GFXM_PDF::sub_fonts())
 				'sub_upper'      => 1,    // podtytuły wersalikami
 				'sub_pt'         => 10.3, // Sweet Belly Sans — podtytuły
-				'name_pt'        => 9,    // Fabrikat Mono Bold — nazwy dań
-				'desc_pt'        => 9,    // Fabrikat Mono Regular — opisy
+				'name_pt'        => 10,   // Fabrikat Mono Bold — nazwy dań
+				'desc_pt'        => 10,   // Fabrikat Mono Regular — opisy
+				'text_lh'        => 1.3,  // interlinia dań: 13 pt przy 10 pt
 				'head_track'     => 0.05, // światło (em): nagłówki kategorii (szablon InDesign: 50)
 				'sub_track'      => 0.14, // światło (em): podtytuły
 				'text_track'     => 0,    // światło (em): nazwy i opisy dań — 0 daje łamanie wierszy jak we wzorze

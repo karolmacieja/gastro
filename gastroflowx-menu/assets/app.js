@@ -154,7 +154,9 @@ function slugify( str ) {
 const clone = ( o ) => JSON.parse( JSON.stringify( o ) );
 
 function dishName( d, lang ) {
-	return ( lang === 'en' && d.name_en && d.name_en.trim() ) ? d.name_en : d.name_pl;
+	const n = ( lang === 'en' && d.name_en && d.name_en.trim() ) ? d.name_en : d.name_pl;
+	// „|” = ręczne złamanie wiersza (jak GFXM_PDF::breaks()).
+	return String( n || '' ).split( '|' ).map( ( x ) => x.trim() ).join( '\n' );
 }
 function dishDesc( d, lang ) {
 	return ( lang === 'en' && d.desc_en && d.desc_en.trim() ) ? d.desc_en : ( d.desc_pl || '' );
@@ -235,7 +237,7 @@ const size = ( L, k ) => ( +L[ k ] > 0 ? +L[ k ] : DEF_PT[ k ] );
 const DEFAULTS = cfg.defaults || { settings: null, categories: [] };
 const LOGO_SIZE_KEYS = [ 'width', 'width_unit', 'height', 'height_unit' ];
 const GUIDE_KEYS = [ 'header_top', 'content_top', 'content_bottom', 'footer_top', 'left_x', 'left_end', 'right_x', 'right_end', 'heading_gap', 'dish_gap', 'category_gap', 'fit_page', 'cut_line' ];
-const TYPO_KEYS = [ 'heading_weight', 'name_weight', 'head_pt', 'sub_font', 'sub_upper', 'sub_pt', 'name_pt', 'desc_pt', 'head_track', 'sub_track', 'text_track' ];
+const TYPO_KEYS = [ 'heading_weight', 'name_weight', 'head_pt', 'sub_font', 'sub_upper', 'sub_pt', 'text_lh', 'name_pt', 'desc_pt', 'head_track', 'sub_track', 'text_track' ];
 const copyKeys = ( target, source, keys ) => { keys.forEach( ( k ) => { if ( source && source[ k ] !== undefined ) target[ k ] = clone( source[ k ] ); } ); };
 
 function emptyDraft() {
@@ -291,6 +293,7 @@ const PaperPreview = {
 				out.push( {
 					id: c.id, name: catName( c, this.lang ), sub: sub, column: c.column === 'right' ? 'right' : 'left', align: c.align === 'bottom' ? 'bottom' : 'top', dishes: dishes,
 					subDx: +c.sub_dx || 0, subDy: +c.sub_dy || 0, subPt: +c.sub_pt > 0 ? +c.sub_pt : 0,
+					dx: +c.dx || 0, gap: ( c.gap === '' || c.gap === null || c.gap === undefined || isNaN( +c.gap ) ) ? null : +c.gap,
 				} );
 			} );
 			return out;
@@ -328,6 +331,8 @@ const PaperPreview = {
 			return { family: "'GFXM Sub " + key + "', 'GFXM Script', cursive", factor: ( list[ key ] && list[ key ].factor ) || 1 };
 		},
 		subUpper() { return this.L.sub_upper === undefined || !! +this.L.sub_upper; },
+		/** Interlinia dań (Ustawienia PDF → Typografia), jak GFXM_PDF::base_css(). */
+		textLh() { return +this.L.text_lh > 0 ? +this.L.text_lh : 1.2; },
 		nameFamily() { return "'GFXM Name " + this.nameWeight + "', 'GFXM Bold', sans-serif"; },
 		/** Lustrzane odbicie GFXM_PDF::layout_page(): „top” od górnej prowadnicy w dół, „bottom” od dolnej w górę. */
 		lay() {
@@ -345,7 +350,7 @@ const PaperPreview = {
 			let y = top;
 			this.cats.forEach( ( c ) => {
 				const m = this.meas[ c.id ] || { h: 0 };
-				pos[ c.id ] = { x: g.xLeft, y: y, w: g.wLeft };
+				pos[ c.id ] = { x: g.xLeft + c.dx, y: y, w: g.wLeft };
 				y += m.h + gap;
 			} );
 			const end = this.cats.length ? y - gap : top;
@@ -373,7 +378,7 @@ const PaperPreview = {
 				if ( topEnd > bottom + 0.5 || ( tops.length && bots.length && topEnd + gap > botStart + 0.5 ) || botStart < top - 0.5 ) overflow = true;
 			} );
 			this.cats.forEach( ( c ) => {
-				pos[ c.id ].x = c.column === 'right' ? g.xRight : g.xLeft;
+				pos[ c.id ].x = ( c.column === 'right' ? g.xRight : g.xLeft ) + c.dx;
 				pos[ c.id ].w = c.column === 'right' ? g.wRight : g.wLeft;
 			} );
 			return { pos: pos, extra: extra, footTop: +L.footer_top || 0, overflow: this.cats.length > 0 && overflow };
@@ -468,19 +473,19 @@ const PaperPreview = {
 
 					<div v-for="c in cats" :key="c.id + '-' + ci" class="p-cat" :data-cat="ci === 0 ? c.id : null"
 						:style="{ left: ( ( lay.pos[ c.id ] ? lay.pos[ c.id ].x : g.xLeft ) + dx ) + 'px', top: ( lay.pos[ c.id ] ? lay.pos[ c.id ].y : L.content_top ) + 'px', width: ( lay.pos[ c.id ] ? lay.pos[ c.id ].w : g.wLeft ) + 'px' }">
-						<div class="p-head" :style="{ marginBottom: px( sizes.headGap ) }">
+						<div class="p-head" :style="{ marginBottom: px( c.gap !== null ? c.gap * fit : sizes.headGap ) }">
 							<div class="p-h" :style="{ fontFamily: headFamily, letterSpacing: track.head, fontSize: px( sizes.head ), marginTop: px( sizes.headMt ), lineHeight: sizes.headLh, top: px( sizes.dyHead ) }"><span>{{ nbsp( c.name ) }}</span><i class="p-bl"></i></div>
 							<div v-if="c.sub.trim()" class="p-s" :style="subStyle( c )"><span>{{ nbsp( c.sub ) }}</span><i class="p-bl"></i></div>
 						</div>
 						<div v-for="( d, n ) in c.dishes" :key="d.id" :style="{ marginTop: n ? px( sizes.dishGap ) : 0 }">
-							<div class="p-name" :style="{ fontFamily: nameFamily, letterSpacing: track.text, fontSize: px( sizes.name ), top: px( sizes.dyName ) }">{{ nbsp( dishName( d, lang ) ) }}</div>
-							<div v-if="dishDesc( d, lang )" class="p-desc" :style="{ letterSpacing: track.text, fontSize: px( sizes.desc ), top: px( sizes.dyDesc ) }">{{ nbsp( dishDesc( d, lang ) ) }}</div>
+							<div class="p-name" :style="{ fontFamily: nameFamily, lineHeight: textLh, letterSpacing: track.text, fontSize: px( sizes.name ), top: px( sizes.dyName ) }">{{ nbsp( dishName( d, lang ) ) }}</div>
+							<div v-if="dishDesc( d, lang )" class="p-desc" :style="{ lineHeight: textLh, letterSpacing: track.text, fontSize: px( sizes.desc ), top: px( sizes.dyDesc ) }">{{ nbsp( dishDesc( d, lang ) ) }}</div>
 						</div>
 					</div>
 
 					<div v-if="extra" class="p-extra" :style="isSplit
-						? { top: ( lay.extra ? lay.extra.top : -9999 ) + 'px', left: ( g.xLeft + dx ) + 'px', width: g.wLeft + 'px', letterSpacing: track.text, fontSize: px( sizes.desc ) }
-						: { top: ( lay.extra ? lay.extra.top : -9999 ) + 'px', left: ( g.xLeft + g.contentW * 0.1 ) + 'px', width: ( g.contentW * 0.8 ) + 'px', letterSpacing: track.text, fontSize: px( sizes.desc ) }">{{ nbsp( extra ) }}</div>
+						? { top: ( lay.extra ? lay.extra.top : -9999 ) + 'px', left: ( g.xLeft + dx ) + 'px', width: g.wLeft + 'px', lineHeight: textLh, letterSpacing: track.text, fontSize: px( sizes.desc ) }
+						: { top: ( lay.extra ? lay.extra.top : -9999 ) + 'px', left: ( g.xLeft + g.contentW * 0.1 ) + 'px', width: ( g.contentW * 0.8 ) + 'px', lineHeight: textLh, letterSpacing: track.text, fontSize: px( sizes.desc ) }">{{ nbsp( extra ) }}</div>
 
 					<div v-if="! cats.length" class="p-placeholder" :style="Object.assign( { top: L.content_top + 'px' }, logoBoxStyle( dx ) )">Zaznacz dania, aby zobaczyć menu</div>
 
@@ -833,7 +838,7 @@ function createGfxmApp() {
 
 			/* ---------- Kategorie ---------- */
 
-			addCat() { this.catRows.push( { id: '', name_pl: '', name_en: '', sub_pl: '', sub_en: '', column: this.catRows.length % 2 ? 'right' : 'left', align: 'top', sub_dx: 40, sub_dy: 12.2, sub_pt: 0 } ); },
+			addCat() { this.catRows.push( { id: '', name_pl: '', name_en: '', sub_pl: '', sub_en: '', column: this.catRows.length % 2 ? 'right' : 'left', align: 'top', sub_dx: 40, sub_dy: 12.2, sub_pt: 0, dx: 0, gap: '' } ); },
 			moveCat( i, dir ) {
 				const j = i + dir;
 				if ( j < 0 || j >= this.catRows.length ) return;
@@ -1169,11 +1174,15 @@ function createGfxmApp() {
 					</div>
 					<div class="gfxm-cat-foot">
 						<div><span class="gfxm-mini" title="Od początku nazwy kategorii do początku podtytułu (px)">Podtytuł → w prawo (px)</span>
-							<input class="gfxm-input" type="number" step="0.5" v-model.number="r.sub_dx"></div>
+							<input class="gfxm-input" type="number" step="any" v-model.number="r.sub_dx"></div>
 						<div><span class="gfxm-mini" title="Od linii bazowej nazwy do linii bazowej podtytułu; wartość ujemna = nad nazwą (px)">Podtytuł → w dół (px, minus = nad)</span>
-							<input class="gfxm-input" type="number" step="0.5" v-model.number="r.sub_dy"></div>
+							<input class="gfxm-input" type="number" step="any" v-model.number="r.sub_dy"></div>
 						<div><span class="gfxm-mini" title="Puste lub 0 = rozmiar z Ustawień PDF">Rozmiar podtytułu (pt)</span>
 							<input class="gfxm-input" type="number" min="0" max="60" step="0.1" v-model.number="r.sub_pt" placeholder="jak w Ustawieniach"></div>
+						<div><span class="gfxm-mini" title="Przesunięcie całej kategorii względem kolumny; minus = w lewo (px)">Kategoria → w prawo (px)</span>
+							<input class="gfxm-input" type="number" step="any" v-model.number="r.dx"></div>
+						<div><span class="gfxm-mini" title="Odstęp od nazwy kategorii do pierwszego dania; puste = z Ustawień PDF (px)">Nazwa → pierwsze danie (px)</span>
+							<input class="gfxm-input" type="number" min="0" step="any" v-model="r.gap" placeholder="jak w Ustawieniach"></div>
 						<div class="gfxm-actions">
 							<button type="button" class="gfxm-btn gfxm-btn-ghost gfxm-btn-icon" @click="moveCat( i, -1 )" :disabled="i === 0" aria-label="Wyżej"><i class="fa-solid fa-arrow-up"></i></button>
 							<button type="button" class="gfxm-btn gfxm-btn-ghost gfxm-btn-icon" @click="moveCat( i, 1 )" :disabled="i === catRows.length - 1" aria-label="Niżej"><i class="fa-solid fa-arrow-down"></i></button>
@@ -1242,14 +1251,14 @@ function createGfxmApp() {
 					<div class="gfxm-field">
 						<span class="gfxm-label">Szerokość</span>
 						<div class="gfxm-dim">
-							<input class="gfxm-input" type="number" min="0" step="1" v-model.number="tplLogo( which ).width" :disabled="tplLogo( which ).width_unit === 'auto'" aria-label="Szerokość">
+							<input class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLogo( which ).width" :disabled="tplLogo( which ).width_unit === 'auto'" aria-label="Szerokość">
 							<select class="gfxm-select" v-model="tplLogo( which ).width_unit" aria-label="Jednostka szerokości"><option value="%">%</option><option value="px">px</option><option value="auto">auto</option></select>
 						</div>
 					</div>
 					<div class="gfxm-field">
 						<span class="gfxm-label">Wysokość</span>
 						<div class="gfxm-dim">
-							<input class="gfxm-input" type="number" min="0" step="1" v-model.number="tplLogo( which ).height" :disabled="tplLogo( which ).height_unit === 'auto'" aria-label="Wysokość">
+							<input class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLogo( which ).height" :disabled="tplLogo( which ).height_unit === 'auto'" aria-label="Wysokość">
 							<select class="gfxm-select" v-model="tplLogo( which ).height_unit" aria-label="Jednostka wysokości"><option value="auto">auto</option><option value="px">px</option><option value="%">%</option></select>
 						</div>
 					</div>
@@ -1263,25 +1272,25 @@ function createGfxmApp() {
 					<button type="button" class="gfxm-btn gfxm-btn-ghost gfxm-btn-sm gfxm-reset" @click="resetGuides" :title="'Przywróć domyślne prowadnice — ' + tplName()"><i class="fa-solid fa-rotate-left"></i> Przywróć domyślne</button>
 				</div>
 				<div class="gfxm-row">
-					<div class="gfxm-field"><label class="gfxm-label" for="l-ht">Logo nagłówka — góra</label><input id="l-ht" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.header_top"></div>
-					<div class="gfxm-field"><label class="gfxm-label" for="l-ct">Treść — górna prowadnica</label><input id="l-ct" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.content_top"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-ht">Logo nagłówka — góra</label><input id="l-ht" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.header_top"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-ct">Treść — górna prowadnica</label><input id="l-ct" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.content_top"></div>
 				</div>
 				<div class="gfxm-row">
-					<div class="gfxm-field"><label class="gfxm-label" for="l-cb">Treść — dolna prowadnica</label><input id="l-cb" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.content_bottom"></div>
-					<div class="gfxm-field"><label class="gfxm-label" for="l-ft">Logo stopki — góra</label><input id="l-ft" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.footer_top"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-cb">Treść — dolna prowadnica</label><input id="l-cb" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.content_bottom"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-ft">Logo stopki — góra</label><input id="l-ft" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.footer_top"></div>
 				</div>
 				<div class="gfxm-row">
-					<div class="gfxm-field"><label class="gfxm-label" for="l-lx">{{ editTpl === 'split' ? 'Lewa połówka — kolumna od' : 'Lewa kolumna — od' }}</label><input id="l-lx" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.left_x"></div>
-					<div class="gfxm-field"><label class="gfxm-label" for="l-le">{{ editTpl === 'split' ? 'Lewa połówka — kolumna do' : 'Lewa kolumna — do' }}</label><input id="l-le" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.left_end"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-lx">{{ editTpl === 'split' ? 'Lewa połówka — kolumna od' : 'Lewa kolumna — od' }}</label><input id="l-lx" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.left_x"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-le">{{ editTpl === 'split' ? 'Lewa połówka — kolumna do' : 'Lewa kolumna — do' }}</label><input id="l-le" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.left_end"></div>
 				</div>
 				<div class="gfxm-row">
-					<div class="gfxm-field"><label class="gfxm-label" for="l-rx">{{ editTpl === 'split' ? 'Prawa połówka — kolumna od' : 'Prawa kolumna — od' }}</label><input id="l-rx" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.right_x"></div>
-					<div class="gfxm-field"><label class="gfxm-label" for="l-re">{{ editTpl === 'split' ? 'Prawa połówka — kolumna do' : 'Prawa kolumna — do' }}</label><input id="l-re" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.right_end"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-rx">{{ editTpl === 'split' ? 'Prawa połówka — kolumna od' : 'Prawa kolumna — od' }}</label><input id="l-rx" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.right_x"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-re">{{ editTpl === 'split' ? 'Prawa połówka — kolumna do' : 'Prawa kolumna — do' }}</label><input id="l-re" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.right_end"></div>
 				</div>
 				<div class="gfxm-row">
-					<div class="gfxm-field"><label class="gfxm-label" for="l-hg">Nagłówek → dania</label><input id="l-hg" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.heading_gap"></div>
-					<div class="gfxm-field"><label class="gfxm-label" for="l-dg">Między daniami</label><input id="l-dg" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.dish_gap"></div>
-					<div class="gfxm-field"><label class="gfxm-label" for="l-cg">Min. między kategoriami</label><input id="l-cg" class="gfxm-input" type="number" min="0" v-model.number="tplLayout.category_gap"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-hg">Nagłówek → dania</label><input id="l-hg" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.heading_gap"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-dg">Między daniami</label><input id="l-dg" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.dish_gap"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="l-cg">Min. między kategoriami</label><input id="l-cg" class="gfxm-input" type="number" min="0" step="any" v-model.number="tplLayout.category_gap"></div>
 				</div>
 				<p v-if="editTpl === 'split'" class="gfxm-sub" style="margin:0 0 12px">„Treść — górna prowadnica” to górna krawędź linii tekstu: przy 202 litery „zupy” zaczynają się dokładnie na prowadnicy 210 z Canvy, a pierwsze danie na 252.</p>
 				<label v-if="editTpl === 'split'" class="gfxm-switch" style="margin-bottom:12px">
@@ -1321,6 +1330,7 @@ function createGfxmApp() {
 						<select id="t-nw" class="gfxm-select" v-model="settingsForm.layout.name_weight"><option v-for="w in nameWeights" :key="w" :value="w">Fabrikat Mono {{ w }}</option></select></div>
 					<div class="gfxm-field"><label class="gfxm-label" for="t-n">Nazwa dania (pt)</label><input id="t-n" class="gfxm-input" type="number" min="5" max="60" step="0.5" v-model.number="settingsForm.layout.name_pt"></div>
 					<div class="gfxm-field"><label class="gfxm-label" for="t-d">Opis — Regular (pt)</label><input id="t-d" class="gfxm-input" type="number" min="5" max="60" step="0.5" v-model.number="settingsForm.layout.desc_pt"></div>
+					<div class="gfxm-field"><label class="gfxm-label" for="t-lh">Interlinia dań</label><input id="t-lh" class="gfxm-input" type="number" min="0.8" max="3" step="0.05" v-model.number="settingsForm.layout.text_lh"></div>
 				</div>
 				<div class="gfxm-row">
 					<div class="gfxm-field"><label class="gfxm-label" for="t-th">Światło — kategorie</label><input id="t-th" class="gfxm-input" type="number" min="-0.1" max="0.5" step="0.01" v-model.number="settingsForm.layout.head_track"></div>

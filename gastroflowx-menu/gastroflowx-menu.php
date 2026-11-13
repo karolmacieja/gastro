@@ -3,7 +3,7 @@
  * Plugin Name:       Menu GastroFlowX
  * Plugin URI:        https://gastroflowx.pl
  * Description:       Moduł GastroFlowx: baza dań (PL/EN), kreator menu, „Wersje Standardowe” i generowanie PDF (Dompdf) — w całości z frontu. Shortcode: [gastroflowx_menu_app]
- * Version:           1.6.0
+ * Version:           1.6.1
  * Author:            GastroFlowx
  * Text Domain:       gastroflowx-menu
  * Domain Path:       /languages
@@ -16,8 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GFXM_VERSION', '1.6.0' );
-define( 'GFXM_DB_VERSION', '1.6.0' );
+define( 'GFXM_VERSION', '1.6.1' );
+define( 'GFXM_DB_VERSION', '1.6.1' );
 define( 'GFXM_FILE', __FILE__ );
 define( 'GFXM_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFXM_URL', plugin_dir_url( __FILE__ ) );

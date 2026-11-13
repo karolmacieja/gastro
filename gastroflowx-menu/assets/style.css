@@ -135,8 +135,8 @@
 .gfxm-paper .p-s { position:absolute; font-family:'GFXM Script', cursive; line-height:1.2; letter-spacing:.14em; white-space:nowrap; }
 .gfxm-paper .p-h .p-bl, .gfxm-paper .p-s .p-bl { display:inline-block; width:0; height:0; vertical-align:baseline; }
 .gfxm-paper .p-h span, .gfxm-paper .p-s span { display:inline-block; }
-.gfxm-paper .p-name { font-family:'GFXM Bold', sans-serif; line-height:1.2; letter-spacing:.04em; text-transform:uppercase; }
-.gfxm-paper .p-desc { font-family:'GFXM Body', sans-serif; line-height:1.2; letter-spacing:.04em; color:#1A1A1A; }
+.gfxm-paper .p-name { font-family:'GFXM Bold', sans-serif; line-height:1.2; letter-spacing:.04em; text-transform:uppercase; white-space:pre-line; }
+.gfxm-paper .p-desc { font-family:'GFXM Body', sans-serif; line-height:1.2; letter-spacing:.04em; color:#1A1A1A; white-space:pre-line; }
 .gfxm-paper .p-extra { position:absolute; font-family:'GFXM Body', sans-serif; line-height:1.2; letter-spacing:.04em; text-align:center; white-space:pre-line; }
 .gfxm-paper .p-placeholder { position:absolute; left:0; width:100%; text-align:center; font-family:sans-serif; color:#CBD5E1; font-size:18px; }
 .gfxm-paper .p-logo-ph { display:inline-flex; border:1px dashed #CBD5E1; color:#94A3B8; font-size:12px; align-items:center; justify-content:center; font-family:sans-serif; }

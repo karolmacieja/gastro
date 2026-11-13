@@ -4,7 +4,7 @@ Tags: restaurant, menu, pdf, dompdf, gastroflowx
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,13 @@ nonce wp_rest (nagłówek X-WP-Nonce) i dostępu do modułu (rola/uprawnienie).
 * Logo osadzane jako data-URI — Dompdf nie pobiera niczego z sieci.
 
 == Changelog ==
+
+= 1.6.1 =
+* Układ 1:1 z szablonem InDesign (listopad): kolumny 47,37 / 306,04 pt (42 i 46 znaków w wierszu), dania Fabrikat Mono 10 pt z interlinią 13 pt, 2 mm między daniami, nazwa kategorii → pierwsze danie 30,9 pt (prawa kolumna 28,4 pt), linia bazowa „zupy” 210,3 pt, ostatnie linie obu kolumn na 663,9 pt. Zgodność linii bazowych z szablonem ±0,05 pt.
+* Nowe logo nagłówka i stopki wycięte z szablonu (logo-*-v2.png, 1200 dpi, przezroczyste tło) — importowane do biblioteki mediów i ustawiane automatycznie.
+* Nowe ustawienia: interlinia dań (Typografia), przy kategorii — przesunięcie w poziomie i własny odstęp nazwa → pierwsze danie. Prowadnice i rozmiary logo przyjmują ułamki px.
+* Nazwa dania: „|” łamie wiersz (np. „Sałata Lazurowa | z gruszką i serem pleśniowym”); w opisie działa zwykły Enter.
+* Migracja ustawia prowadnice, typografię, logo i układ czterech kategorii domyślnych (przystawki i słodkie — do dolnej prowadnicy); własne kategorie, nazwy i dania bez zmian. Ponowna aktywacja wtyczki nie pomija już migracji.
 
 = 1.6.0 =
 * Nowy wygląd podtytułów wg szablonu z listopada: czcionka Sweet Belly Sans (dołączona jako TTF z dorysowanymi polskimi znakami Ą Ę Ć Ł Ń Ó Ś Ź Ż), wersaliki, światło 0.14 em, 10,3 pt (DESERY 11,1 pt).

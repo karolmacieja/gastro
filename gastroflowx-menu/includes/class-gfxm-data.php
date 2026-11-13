@@ -16,7 +16,7 @@ class GFXM_Data {
 		$cats = is_array( $cats ) ? array_values( $cats ) : array();
 		foreach ( $cats as $i => $c ) {
 			$cats[ $i ] = array_merge(
-				array( 'sub_pl' => '', 'sub_en' => '', 'column' => 0 === $i % 2 ? 'left' : 'right', 'align' => 'top' ),
+				array( 'sub_pl' => '', 'sub_en' => '', 'column' => 0 === $i % 2 ? 'left' : 'right', 'align' => 'top', 'dx' => 0, 'gap' => '' ),
 				GFXM_Install::default_sub_offsets( isset( $c['id'] ) ? $c['id'] : '' ),
 				$c
 			);
@@ -68,6 +68,10 @@ class GFXM_Data {
 				'sub_dx'   => isset( $row['sub_dx'] ) && is_numeric( $row['sub_dx'] ) ? max( -300, min( 600, round( (float) $row['sub_dx'], 2 ) ) ) : 0,
 				'sub_dy'   => isset( $row['sub_dy'] ) && is_numeric( $row['sub_dy'] ) ? max( -200, min( 200, round( (float) $row['sub_dy'], 2 ) ) ) : 0,
 				'sub_pt'   => isset( $row['sub_pt'] ) && is_numeric( $row['sub_pt'] ) && (float) $row['sub_pt'] > 0 ? max( 5, min( 60, round( (float) $row['sub_pt'], 1 ) ) ) : 0,
+				// Przesunięcie całej kategorii w poziomie (px) i własny odstęp
+				// nazwa → pierwsze danie (px; puste = z Ustawień PDF).
+				'dx'       => isset( $row['dx'] ) && is_numeric( $row['dx'] ) ? max( -200, min( 200, round( (float) $row['dx'], 2 ) ) ) : 0,
+				'gap'      => isset( $row['gap'] ) && is_numeric( $row['gap'] ) ? max( 0, min( 300, round( (float) $row['gap'], 2 ) ) ) : '',
 			);
 		}
 		if ( empty( $clean ) ) {
@@ -356,12 +360,16 @@ class GFXM_Data {
 				$layout[ $k ] = max( -0.1, min( 0.5, round( (float) $in, 3 ) ) );
 			} elseif ( substr( $k, -3 ) === '_pt' ) {
 				$layout[ $k ] = max( 5, min( 60, round( (float) $in, 1 ) ) );
+			} elseif ( 'text_lh' === $k ) {
+				$layout[ $k ] = max( 0.8, min( 3, round( (float) $in, 3 ) ) );
 			} elseif ( 'sub_font' === $k ) {
 				$layout[ $k ] = GFXM_PDF::sub_font_key( $in );
 			} elseif ( 'fit_page' === $k || 'sub_upper' === $k ) {
 				$layout[ $k ] = $in ? 1 : 0;
 			} else {
-				$layout[ $k ] = max( 0, min( 1100, (int) $in ) );
+				// Prowadnice i odstępy w px (A4 794 × 1123) — z ułamkami, żeby dało się
+				// trafić co do 0,1 pt w szablon z InDesigna.
+				$layout[ $k ] = max( 0, min( 1100, round( (float) $in, 2 ) ) );
 			}
 		}
 		// Szablon „split”: tylko geometria i rozmiary logo (obraz wspólny).

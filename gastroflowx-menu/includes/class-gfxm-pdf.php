@@ -395,6 +395,8 @@ class GFXM_PDF {
 		$ts = self::track( $L, 'sub_track' );
 		$t  = self::track( $L, 'text_track' );
 		$l  = self::LINE_H;
+		// Interlinia dań (nazwa, opis, tekst dodatkowy) — z ustawień; szablon InDesign: 13 pt przy 10 pt = 1.3.
+		$tl = isset( $L['text_lh'] ) && (float) $L['text_lh'] > 0 ? (float) $L['text_lh'] : self::LINE_H;
 		return $css . "
 			@page { size: A4 portrait; margin: 0; }
 			body { margin: 0; padding: 0; color: #000000; }
@@ -402,9 +404,9 @@ class GFXM_PDF {
 			.cat-h { font-family: '{$fonts['heading']['family']}'; font-weight: normal; line-height: " . $lh( 'heading', self::HEAD_LH ) . "; letter-spacing: {$th}em; text-transform: lowercase; white-space: nowrap; }
 			.cat-h span, .cat-s span { display: inline-block; }
 			.cat-s { position: absolute; font-family: '{$fonts['script']['family']}'; font-weight: normal; line-height: " . $lh( 'script', $l ) . "; letter-spacing: {$ts}em; white-space: nowrap;" . ( ! isset( $L['sub_upper'] ) || ! empty( $L['sub_upper'] ) ? ' text-transform: uppercase;' : '' ) . " }
-			.dish-name { font-family: '{$fonts['bold']['family']}'; font-weight: normal; line-height: " . $lh( 'bold', $l ) . "; letter-spacing: {$t}em; text-transform: uppercase; }
-			.dish-desc { font-family: '{$fonts['body']['family']}'; font-weight: normal; line-height: " . $lh( 'body', $l ) . "; letter-spacing: {$t}em; color: #1A1A1A; }
-			.extra { font-family: '{$fonts['body']['family']}'; font-weight: normal; line-height: " . $lh( 'body', $l ) . "; letter-spacing: {$t}em; text-align: center; white-space: pre-line; }
+			.dish-name { font-family: '{$fonts['bold']['family']}'; font-weight: normal; line-height: " . $lh( 'bold', $tl ) . "; letter-spacing: {$t}em; text-transform: uppercase; }
+			.dish-desc { font-family: '{$fonts['body']['family']}'; font-weight: normal; line-height: " . $lh( 'body', $tl ) . "; letter-spacing: {$t}em; color: #1A1A1A; }
+			.extra { font-family: '{$fonts['body']['family']}'; font-weight: normal; line-height: " . $lh( 'body', $tl ) . "; letter-spacing: {$t}em; text-align: center; white-space: pre-line; }
 		";
 	}
 
@@ -472,6 +474,8 @@ class GFXM_PDF {
 					'sub_dx' => isset( $cat['sub_dx'] ) ? (float) $cat['sub_dx'] : 0,
 					'sub_dy' => isset( $cat['sub_dy'] ) ? (float) $cat['sub_dy'] : 0,
 					'sub_pt' => isset( $cat['sub_pt'] ) ? (float) $cat['sub_pt'] : 0,
+					'dx'     => isset( $cat['dx'] ) ? (float) $cat['dx'] : 0,
+					'gap'    => isset( $cat['gap'] ) && is_numeric( $cat['gap'] ) ? (float) $cat['gap'] : null,
 					'dishes' => $list,
 				);
 			}
@@ -497,11 +501,13 @@ class GFXM_PDF {
 	}
 
 	/** HTML jednej kategorii. $m = prefiks znaczników pomiaru (null = bez), $sub = sub_box() (null = bez podtytułu). */
-	private static function cat_html( $c, $m = null, $sub = null ) {
+	private static function cat_html( $c, $m = null, $sub = null, $scale = 1.0 ) {
 		$mark = function ( $k ) use ( $m ) {
 			return null === $m ? '' : ' data-m="' . esc_attr( $m . '|' . $k ) . '"';
 		};
-		$h  = '<div class="cat-head"><div class="cat-h"><span' . $mark( 'hw' ) . '>' . esc_html( $c['name'] ) . '</span></div>';
+		// Własny odstęp nazwa kategorii → pierwsze danie (null = z Ustawień PDF).
+		$gap = isset( $c['gap'] ) && null !== $c['gap'] ? ' style="margin-bottom:' . round( $c['gap'] * $scale, 3 ) . 'px"' : '';
+		$h   = '<div class="cat-head"' . $gap . '><div class="cat-h"><span' . $mark( 'hw' ) . '>' . esc_html( $c['name'] ) . '</span></div>';
 		// Podtytuł pozycjonowany absolutnie względem nazwy — nie zmienia
 		// wysokości bloku, więc nazwy kategorii zostają na swoich liniach.
 		if ( null !== $sub && '' !== trim( $c['sub'] ) ) {
@@ -511,13 +517,22 @@ class GFXM_PDF {
 		foreach ( $c['dishes'] as $n => $d ) {
 			// Odstęp tylko MIĘDZY daniami (margin-top od drugiego) — ostatnia linia
 			// opisu = dolna krawędź bloku, więc wyrównanie do prowadnicy jest co do piksela.
-			$h .= '<div class="dish' . ( $n ? ' dish-next' : '' ) . '"><div class="dish-name">' . esc_html( $d['name'] ) . '</div>';
+			$h .= '<div class="dish' . ( $n ? ' dish-next' : '' ) . '"><div class="dish-name">' . self::breaks( $d['name'] ) . '</div>';
 			if ( '' !== trim( $d['desc'] ) ) {
 				$h .= '<div class="dish-desc">' . nl2br( esc_html( $d['desc'] ) ) . '</div>';
 			}
 			$h .= '</div>';
 		}
 		return $h;
+	}
+
+	/**
+	 * Nazwa dania: „|” = ręczne złamanie wiersza (pole nazwy jest
+	 * jednowierszowe), np. „Sałata Lazurowa | z gruszką i serem pleśniowym”.
+	 */
+	public static function breaks( $text ) {
+		$parts = array_map( 'trim', explode( '|', (string) $text ) );
+		return implode( '<br>', array_map( 'esc_html', $parts ) );
 	}
 
 	private static function make_dompdf( $html, $paper = 'A4', &$marks = null ) {
@@ -576,7 +591,7 @@ class GFXM_PDF {
 			foreach ( $job['cats'] as $c ) {
 				// „split”: jedna kolumna (lewa połówka); „columns”: szerokość wg kolumny kategorii.
 				$w     = ( 'split' !== $job['tpl'] && 'right' === $c['column'] ) ? $g['w_right'] : $g['w_left'];
-				$body .= '<div data-m="' . $idx . '|cat|' . esc_attr( $c['id'] ) . '" style="width:' . $w . 'px;page-break-inside:avoid">' . self::cat_html( $c, $idx . '|' . $c['id'] ) . '</div>';
+				$body .= '<div data-m="' . $idx . '|cat|' . esc_attr( $c['id'] ) . '" style="width:' . $w . 'px;page-break-inside:avoid">' . self::cat_html( $c, $idx . '|' . $c['id'], null, $job['scale'] ) . '</div>';
 			}
 			if ( '' !== $job['extra'] ) {
 				$ew    = 'split' === $job['tpl'] ? $g['w_left'] : round( $g['content_w'] * 0.8, 2 );
@@ -660,7 +675,7 @@ class GFXM_PDF {
 			}
 		}
 		foreach ( $cats as $c ) {
-			$pos[ $c['id'] ]['x'] = 'right' === $c['column'] ? $g['x_right'] : $g['x_left'];
+			$pos[ $c['id'] ]['x'] = ( 'right' === $c['column'] ? $g['x_right'] : $g['x_left'] ) + $c['dx'];
 			$pos[ $c['id'] ]['w'] = 'right' === $c['column'] ? $g['w_right'] : $g['w_left'];
 		}
 		return array(
@@ -696,7 +711,7 @@ class GFXM_PDF {
 		$y   = $top;
 		foreach ( $cats as $c ) {
 			$m               = $meas['cats'][ $c['id'] ];
-			$pos[ $c['id'] ] = array( 'x' => $g['x_left'], 'y' => $y, 'w' => $g['w_left'] );
+			$pos[ $c['id'] ] = array( 'x' => $g['x_left'] + $c['dx'], 'y' => $y, 'w' => $g['w_left'] );
 			$y += $m['h'] + $gap;
 		}
 		$end = $cats ? $y - $gap : $top;
@@ -792,7 +807,7 @@ class GFXM_PDF {
 					}
 					foreach ( $job['cats'] as $c ) {
 						$p     = $lay['pos'][ $c['id'] ];
-						$html .= '<div class="abs" style="left:' . round( $p['x'] + $dx, 2 ) . 'px;top:' . round( $p['y'], 2 ) . 'px;width:' . round( $p['w'], 2 ) . 'px">' . self::cat_html( $c, null, self::sub_box( $c, $SL, $fonts, $sc ) ) . '</div>';
+						$html .= '<div class="abs" style="left:' . round( $p['x'] + $dx, 2 ) . 'px;top:' . round( $p['y'], 2 ) . 'px;width:' . round( $p['w'], 2 ) . 'px">' . self::cat_html( $c, null, self::sub_box( $c, $SL, $fonts, $sc ), $sc ) . '</div>';
 					}
 					if ( $lay['extra'] ) {
 						$html .= '<div class="abs extra" style="left:' . $lx . 'px;top:' . round( $lay['extra']['top'], 2 ) . 'px;width:' . $g['w_left'] . 'px">' . esc_html( $job['extra'] ) . '</div>';
@@ -809,7 +824,7 @@ class GFXM_PDF {
 				}
 				foreach ( $job['cats'] as $c ) {
 					$p     = $lay['pos'][ $c['id'] ];
-					$html .= '<div class="abs" style="left:' . round( $p['x'], 2 ) . 'px;top:' . round( $p['y'], 2 ) . 'px;width:' . round( $p['w'], 2 ) . 'px">' . self::cat_html( $c, null, self::sub_box( $c, $SL, $fonts, $sc ) ) . '</div>';
+					$html .= '<div class="abs" style="left:' . round( $p['x'], 2 ) . 'px;top:' . round( $p['y'], 2 ) . 'px;width:' . round( $p['w'], 2 ) . 'px">' . self::cat_html( $c, null, self::sub_box( $c, $SL, $fonts, $sc ), $sc ) . '</div>';
 				}
 				if ( $lay['extra'] ) {
 					$w     = round( $g['content_w'] * 0.8, 2 );
