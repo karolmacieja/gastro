@@ -4,7 +4,7 @@ Tags: restaurant, menu, pdf, dompdf, gastroflowx
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,6 +102,11 @@ nonce wp_rest (nagłówek X-WP-Nonce) i dostępu do modułu (rola/uprawnienie).
 * Logo osadzane jako data-URI — Dompdf nie pobiera niczego z sieci.
 
 == Changelog ==
+
+= 1.6.2 =
+* Baza dań → „Import i eksport CSV”: import dań z pliku CSV (kategoria;nazwa_pl;opis_pl;nazwa_en;opis_en — nagłówek opcjonalny, separator „;” / „,” / tab, pola w cudzysłowach z Enterem, UTF-8 lub Windows-1250). Kategoria po nazwie, id albo podtytule. Opcja „Zastąp całą bazę”. Błędne wiersze są pomijane i wypisywane.
+* Eksport bazy do CSV (ten sam format, otwiera się w Excelu) i plik wzoru.
+* „Usuń całą bazę dań” — z potwierdzeniem przez wpisanie USUŃ; zapisane wersje zostają, tracą tylko listy dań.
 
 = 1.6.1 =
 * Układ 1:1 z szablonem InDesign (listopad): kolumny 47,37 / 306,04 pt (42 i 46 znaków w wierszu), dania Fabrikat Mono 10 pt z interlinią 13 pt, 2 mm między daniami, nazwa kategorii → pierwsze danie 30,9 pt (prawa kolumna 28,4 pt), linia bazowa „zupy” 210,3 pt, ostatnie linie obu kolumn na 663,9 pt. Zgodność linii bazowych z szablonem ±0,05 pt.

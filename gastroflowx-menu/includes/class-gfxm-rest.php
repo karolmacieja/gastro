@@ -82,6 +82,8 @@ class GFXM_Rest {
 
 		self::route( '/dishes', 'POST', 'create_dish' );
 		self::route( '/dishes/(?P<id>\d+)', 'POST', 'update_dish' );
+		self::route( '/dishes/import', 'POST', 'import_dishes' );
+		self::route( '/dishes/delete-all', 'POST', 'delete_all_dishes' );
 		self::route( '/dishes/(?P<id>\d+)', 'DELETE', 'delete_dish' );
 
 		self::route( '/categories', 'POST', 'save_categories' );
@@ -122,6 +124,28 @@ class GFXM_Rest {
 
 	public static function update_dish( WP_REST_Request $req ) {
 		return rest_ensure_response( GFXM_Data::save_dish( self::body( $req ), (int) $req['id'] ) );
+	}
+
+	/** { csv: "treść pliku", replace: bool } → raport + świeża baza i wersje. */
+	public static function import_dishes( WP_REST_Request $req ) {
+		$p   = self::body( $req );
+		$res = GFXM_Data::import_csv( isset( $p['csv'] ) ? (string) $p['csv'] : '', ! empty( $p['replace'] ) );
+		if ( is_wp_error( $res ) ) {
+			return $res;
+		}
+		$res['dishes']   = GFXM_Data::dishes();
+		$res['versions'] = GFXM_Data::versions();
+		return rest_ensure_response( $res );
+	}
+
+	/** Usunięcie całej bazy — wymaga { confirm: "USUŃ" } (zabezpieczenie przed przypadkowym wywołaniem). */
+	public static function delete_all_dishes( WP_REST_Request $req ) {
+		$p = self::body( $req );
+		if ( ! isset( $p['confirm'] ) || 'USUŃ' !== trim( (string) $p['confirm'] ) ) {
+			return new WP_Error( 'gfxm_confirm', 'Brak potwierdzenia — wpisz USUŃ.', array( 'status' => 400 ) );
+		}
+		$deleted = GFXM_Data::delete_all_dishes();
+		return rest_ensure_response( array( 'deleted' => $deleted, 'dishes' => array(), 'versions' => GFXM_Data::versions() ) );
 	}
 
 	public static function delete_dish( WP_REST_Request $req ) {

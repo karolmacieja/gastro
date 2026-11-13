@@ -191,6 +191,150 @@ class GFXM_Data {
 		return true;
 	}
 
+	/**
+	 * Usuwa CAŁĄ bazę dań i czyści listy dań we wszystkich zapisanych wersjach
+	 * (same wersje — nazwy, język, szablon — zostają).
+	 *
+	 * @return int liczba usuniętych dań
+	 */
+	public static function delete_all_dishes() {
+		global $wpdb;
+		$table = GFXM_Install::dishes_table();
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore
+		$wpdb->query( "DELETE FROM {$table}" ); // phpcs:ignore
+		foreach ( self::versions() as $v ) {
+			$empty = array();
+			foreach ( array_keys( $v['items'] ) as $cat ) {
+				$empty[ $cat ] = array();
+			}
+			$wpdb->update( GFXM_Install::versions_table(), array( 'items' => wp_json_encode( (object) $empty ) ), array( 'id' => $v['id'] ) );
+		}
+		return $count;
+	}
+
+	/** Kolumny CSV (kolejność bez nagłówka) i rozpoznawane nazwy nagłówków. */
+	const CSV_COLUMNS = array(
+		'category_id' => array( 'kategoria', 'category', 'kat', 'category_id' ),
+		'name_pl'     => array( 'nazwa_pl', 'nazwa', 'name_pl', 'nazwa pl' ),
+		'desc_pl'     => array( 'opis_pl', 'opis', 'desc_pl', 'opis pl' ),
+		'name_en'     => array( 'nazwa_en', 'name_en', 'name', 'nazwa en' ),
+		'desc_en'     => array( 'opis_en', 'desc_en', 'description', 'opis en' ),
+	);
+
+	private static function csv_key( $s ) {
+		$s = strtolower( remove_accents( trim( (string) $s ) ) );
+		return preg_replace( '/[^a-z0-9]+/', '', $s );
+	}
+
+	/**
+	 * Import dań z CSV: kategoria;nazwa_pl;opis_pl;nazwa_en;opis_en.
+	 * Separator „;”, „,” albo tabulator (wykrywany z pierwszego wiersza),
+	 * pola w cudzysłowach mogą zawierać separator i Enter. Nagłówek jest
+	 * opcjonalny. Kategoria = id („mains”) albo nazwa PL/EN („Główne”).
+	 * Błędne wiersze są pomijane i raportowane, poprawne — dodawane.
+	 *
+	 * @return array|WP_Error { added, deleted, errors: [ { line, message } ] }
+	 */
+	public static function import_csv( $csv, $replace = false ) {
+		$csv = (string) $csv;
+		$csv = preg_replace( '/^\xEF\xBB\xBF/', '', $csv ); // BOM z Excela
+		if ( ! seems_utf8( $csv ) ) {
+			$conv = function_exists( 'mb_convert_encoding' ) ? @mb_convert_encoding( $csv, 'UTF-8', 'Windows-1250' ) : false; // phpcs:ignore
+			$csv  = $conv ? $conv : $csv;
+		}
+		$csv = str_replace( array( "\r\n", "\r" ), "\n", $csv );
+		if ( '' === trim( $csv ) ) {
+			return new WP_Error( 'gfxm_csv_empty', 'Plik CSV jest pusty.', array( 'status' => 400 ) );
+		}
+		$first = strtok( $csv, "\n" );
+		$cands = array( ';' => substr_count( $first, ';' ), ',' => substr_count( $first, ',' ), "\t" => substr_count( $first, "\t" ) );
+		arsort( $cands );
+		$delim = key( $cands );
+
+		$fh = fopen( 'php://temp', 'r+' );
+		fwrite( $fh, $csv );
+		rewind( $fh );
+		$rows = array();
+		while ( false !== ( $r = fgetcsv( $fh, 0, $delim, '"', '' ) ) ) {
+			$rows[] = $r;
+		}
+		fclose( $fh );
+		if ( count( $rows ) > 2000 ) {
+			return new WP_Error( 'gfxm_csv_big', 'Za dużo wierszy (maks. 2000).', array( 'status' => 400 ) );
+		}
+
+		// Mapowanie kolumn: z nagłówka albo pozycyjnie.
+		$map  = array_keys( self::CSV_COLUMNS );
+		$head = isset( $rows[0] ) ? array_map( array( __CLASS__, 'csv_key' ), $rows[0] ) : array();
+		$start = 0;
+		$found = array();
+		foreach ( $head as $i => $h ) {
+			foreach ( self::CSV_COLUMNS as $field => $names ) {
+				if ( in_array( $h, array_map( array( __CLASS__, 'csv_key' ), $names ), true ) && ! in_array( $field, $found, true ) ) {
+					$found[ $i ] = $field;
+					break;
+				}
+			}
+		}
+		if ( in_array( 'category_id', $found, true ) && in_array( 'name_pl', $found, true ) ) {
+			$map   = $found;
+			$start = 1;
+		}
+
+		// Kategorie: id, nazwa PL, nazwa EN (bez wielkości liter i ogonków).
+		$cats = array();
+		foreach ( self::categories() as $c ) {
+			// Także po podtytule („desery”, „na początek”), gdy nie koliduje z nazwą innej kategorii.
+			foreach ( array( $c['id'], $c['name_pl'], isset( $c['name_en'] ) ? $c['name_en'] : '', isset( $c['sub_pl'] ) ? $c['sub_pl'] : '' ) as $k ) {
+				if ( '' !== self::csv_key( $k ) && ! isset( $cats[ self::csv_key( $k ) ] ) ) {
+					$cats[ self::csv_key( $k ) ] = $c['id'];
+				}
+			}
+		}
+
+		$valid  = array();
+		$errors = array();
+		for ( $n = $start; $n < count( $rows ); $n++ ) {
+			$r = $rows[ $n ];
+			if ( ! array_filter( array_map( 'trim', (array) $r ), 'strlen' ) ) {
+				continue; // pusty wiersz
+			}
+			$row = array( 'category_id' => '', 'name_pl' => '', 'desc_pl' => '', 'name_en' => '', 'desc_en' => '' );
+			foreach ( $map as $i => $field ) {
+				if ( isset( $r[ $i ] ) ) {
+					$row[ $field ] = trim( $r[ $i ] );
+				}
+			}
+			$ck = self::csv_key( $row['category_id'] );
+			if ( ! isset( $cats[ $ck ] ) ) {
+				$errors[] = array( 'line' => $n + 1, 'message' => 'nieznana kategoria „' . $row['category_id'] . '”' );
+				continue;
+			}
+			if ( '' === $row['name_pl'] ) {
+				$errors[] = array( 'line' => $n + 1, 'message' => 'brak nazwy PL' );
+				continue;
+			}
+			$row['category_id'] = $cats[ $ck ];
+			$valid[]            = $row;
+		}
+		if ( ! $valid ) {
+			return new WP_Error( 'gfxm_csv_none', 'W pliku nie ma poprawnych dań.' . ( $errors ? ' Pierwszy błąd — wiersz ' . $errors[0]['line'] . ': ' . $errors[0]['message'] . '.' : '' ), array( 'status' => 400 ) );
+		}
+
+		// Zastąpienie bazy dopiero, gdy wiadomo, że jest co zaimportować.
+		$deleted = $replace ? self::delete_all_dishes() : 0;
+		$added   = 0;
+		foreach ( $valid as $row ) {
+			$res = self::save_dish( $row );
+			if ( is_wp_error( $res ) ) {
+				$errors[] = array( 'line' => 0, 'message' => $row['name_pl'] . ': ' . $res->get_error_message() );
+			} else {
+				$added++;
+			}
+		}
+		return array( 'added' => $added, 'deleted' => $deleted, 'errors' => $errors );
+	}
+
 	/* ---------------- Wersje standardowe ---------------- */
 
 	public static function format_version( $row ) {

@@ -539,7 +539,8 @@ function createGfxmApp() {
 
 				settingsForm: null,
 
-				busy: { save: false, pdf: null, dish: false, cats: false, settings: false },
+				busy: { save: false, pdf: null, dish: false, cats: false, settings: false, csv: false, wipe: false },
+				csvText: '', csvName: '', csvReplace: false, csvReport: null,
 				toasts: [],
 			};
 		},
@@ -834,6 +835,91 @@ function createGfxmApp() {
 				} catch ( e ) {
 					this.notify( e.message, 'error' );
 				}
+			},
+
+			/* ---------- Import / eksport CSV, usuwanie bazy ---------- */
+
+			/** Po masowej zmianie bazy: nowe dania i wersje, szkic bez nieistniejących dań. */
+			applyDishReload( res ) {
+				this.dishes = res.dishes || [];
+				this.versions = res.versions || this.versions;
+				const ids = new Set( this.dishes.map( ( d ) => d.id ) );
+				Object.keys( this.draft.items ).forEach( ( k ) => { this.draft.items[ k ] = this.draft.items[ k ].filter( ( id ) => ids.has( id ) ); } );
+				if ( this.dishForm && this.dishForm.id && ! ids.has( this.dishForm.id ) ) this.resetDishForm();
+			},
+			pickCsv( ev ) {
+				const f = ev.target.files && ev.target.files[ 0 ];
+				this.csvReport = null;
+				if ( ! f ) { this.csvText = ''; this.csvName = ''; return; }
+				const r = new FileReader();
+				r.onload = () => {
+					// Excel w Polsce często zapisuje CSV w Windows-1250 — gdy UTF-8 daje „�”, czytamy ponownie.
+					const t = String( r.result || '' );
+					if ( t.indexOf( '\uFFFD' ) > -1 && window.TextDecoder ) {
+						f.arrayBuffer().then( ( buf ) => { this.csvText = new TextDecoder( 'windows-1250' ).decode( buf ); } );
+					} else {
+						this.csvText = t;
+					}
+					this.csvName = f.name;
+				};
+				r.readAsText( f, 'UTF-8' );
+			},
+			async importCsv() {
+				if ( ! this.csvText.trim() ) { this.notify( 'Wybierz plik CSV.', 'error' ); return; }
+				if ( this.csvReplace && ! window.confirm( 'Zastąpić całą bazę dań zawartością pliku?\n\nObecne dania (' + this.dishes.length + ') zostaną usunięte, a zapisane wersje stracą listy dań. Tej operacji nie można cofnąć.' ) ) return;
+				this.busy.csv = true;
+				try {
+					const res = await api( '/dishes/import', { method: 'POST', body: { csv: this.csvText, replace: this.csvReplace } } );
+					this.applyDishReload( res );
+					this.csvReport = res;
+					this.notify( 'Zaimportowano dań: ' + res.added + ( res.deleted ? ' (usunięto wcześniej: ' + res.deleted + ')' : '' ) + ( res.errors.length ? ', pominięto wierszy: ' + res.errors.length : '' ) + '.', res.errors.length ? 'error' : 'success' );
+				} catch ( e ) {
+					this.notify( e.message, 'error' );
+				}
+				this.busy.csv = false;
+			},
+			async deleteAllDishes() {
+				if ( ! this.dishes.length ) { this.notify( 'Baza dań jest już pusta.', 'error' ); return; }
+				const typed = window.prompt( 'Usunąć CAŁĄ bazę dań (' + this.dishes.length + ')?\n\nZapisane wersje zostaną, ale stracą listy dań. Tej operacji nie można cofnąć — najpierw możesz pobrać kopię („Eksportuj CSV”).\n\nAby potwierdzić, wpisz: USUŃ' );
+				if ( typed === null ) return;
+				if ( typed.trim().toUpperCase() !== 'USUŃ' ) { this.notify( 'Nie usunięto — trzeba wpisać USUŃ.', 'error' ); return; }
+				this.busy.wipe = true;
+				try {
+					const res = await api( '/dishes/delete-all', { method: 'POST', body: { confirm: 'USUŃ' } } );
+					this.applyDishReload( res );
+					this.notify( 'Usunięto całą bazę dań (' + res.deleted + ').', 'success' );
+				} catch ( e ) {
+					this.notify( e.message, 'error' );
+				}
+				this.busy.wipe = false;
+			},
+			/** CSV w formacie importu (UTF-8 z BOM, separator „;” — otwiera się poprawnie w Excelu). */
+			csvDownload( rows, filename ) {
+				const esc = ( v ) => { v = String( v === undefined || v === null ? '' : v ); return /[";\n\r]/.test( v ) ? '"' + v.replace( /"/g, '""' ) + '"' : v; };
+				const text = '\uFEFF' + rows.map( ( r ) => r.map( esc ).join( ';' ) ).join( '\r\n' ) + '\r\n';
+				const a = document.createElement( 'a' );
+				a.href = URL.createObjectURL( new Blob( [ text ], { type: 'text/csv;charset=utf-8' } ) );
+				a.download = filename;
+				document.body.appendChild( a ); a.click(); a.remove();
+				setTimeout( () => URL.revokeObjectURL( a.href ), 2000 );
+			},
+			exportCsv() {
+				const head = [ 'kategoria', 'nazwa_pl', 'opis_pl', 'nazwa_en', 'opis_en' ];
+				const catName = {};
+				this.categories.forEach( ( c ) => { catName[ c.id ] = c.name_pl; } );
+				const rows = [ head ];
+				this.categories.forEach( ( c ) => {
+					( this.dishesByCat[ c.id ] || [] ).forEach( ( d ) => rows.push( [ catName[ d.category_id ] || d.category_id, d.name_pl, d.desc_pl, d.name_en, d.desc_en ] ) );
+				} );
+				this.csvDownload( rows, 'baza-dan-' + new Date().toISOString().slice( 0, 10 ) + '.csv' );
+			},
+			csvSample() {
+				const c = this.categories.map( ( x ) => x.name_pl );
+				this.csvDownload( [
+					[ 'kategoria', 'nazwa_pl', 'opis_pl', 'nazwa_en', 'opis_en' ],
+					[ c[ 0 ] || 'Zupy', 'Krem z czerwonej soczewicy', 'z warzywami, cytrynowymi grzankami i suszoną miętą', 'Red lentil soup', 'with vegetables, lemon croutons and dried mint' ],
+					[ c[ 2 ] || 'Główne', 'Sałata Lazurowa | z gruszką i serem pleśniowym', 'z orzechami włoskimi, oliwkami, winogronami', '', '' ],
+				], 'wzor-importu-dan.csv' );
 			},
 
 			/* ---------- Kategorie ---------- */
@@ -1151,6 +1237,36 @@ function createGfxmApp() {
 				<button type="button" class="gfxm-btn gfxm-btn-primary gfxm-btn-block" @click="saveDish" :disabled="busy.dish">
 					<span v-if="busy.dish" class="gfxm-spin"></span><i v-else class="fa-solid fa-check"></i> {{ dishForm.id ? 'Zapisz danie' : 'Dodaj do bazy' }}
 				</button>
+			</div>
+
+			<div class="gfxm-card">
+				<div class="gfxm-card-head">
+					<div><h3>Import i eksport CSV</h3><div class="gfxm-sub">Kolumny: <code>kategoria;nazwa_pl;opis_pl;nazwa_en;opis_en</code> (nagłówek opcjonalny, separator „;” lub „,”). Kategoria — nazwa (np. „Główne”) albo id. „|” w nazwie łamie wiersz w PDF.</div></div>
+					<div class="gfxm-actions">
+						<button type="button" class="gfxm-btn gfxm-btn-ghost gfxm-btn-sm" @click="csvSample"><i class="fa-solid fa-file-lines"></i> Wzór</button>
+						<button type="button" class="gfxm-btn gfxm-btn-secondary gfxm-btn-sm" @click="exportCsv" :disabled="! dishes.length"><i class="fa-solid fa-download"></i> Eksportuj CSV</button>
+					</div>
+				</div>
+				<div class="gfxm-field">
+					<label class="gfxm-label" for="gfxm-csv">Plik CSV</label>
+					<input id="gfxm-csv" class="gfxm-input" type="file" accept=".csv,text/csv,text/plain" @change="pickCsv">
+				</div>
+				<label class="gfxm-switch" style="margin-bottom:12px">
+					<input type="checkbox" v-model="csvReplace">
+					<span><strong>Zastąp całą bazę</strong><br><span class="gfxm-sub">Najpierw usuwa wszystkie obecne dania (wersje stracą listy dań). Bez zaznaczenia — dania z pliku są dopisywane.</span></span>
+				</label>
+				<button type="button" class="gfxm-btn gfxm-btn-primary gfxm-btn-block" @click="importCsv" :disabled="busy.csv || ! csvText">
+					<span v-if="busy.csv" class="gfxm-spin"></span><i v-else class="fa-solid fa-file-import"></i> Importuj{{ csvName ? ' „' + csvName + '”' : '' }}
+				</button>
+				<div v-if="csvReport && csvReport.errors.length" class="gfxm-msg gfxm-msg-error" style="margin-top:12px">
+					Pominięte wiersze:
+					<ul style="margin:6px 0 0 18px;padding:0"><li v-for="( e, i ) in csvReport.errors.slice( 0, 20 )" :key="i">{{ e.line ? 'wiersz ' + e.line + ': ' : '' }}{{ e.message }}</li></ul>
+				</div>
+				<div style="border-top:1px solid var(--rs-border, #E5E7EB);margin-top:16px;padding-top:14px">
+					<button type="button" class="gfxm-btn gfxm-btn-ghost gfxm-btn-block" style="color:#B91C1C" @click="deleteAllDishes" :disabled="busy.wipe || ! dishes.length">
+						<span v-if="busy.wipe" class="gfxm-spin"></span><i v-else class="fa-solid fa-trash-can"></i> Usuń całą bazę dań ({{ dishes.length }})
+					</button>
+				</div>
 			</div>
 
 			<div class="gfxm-card">
