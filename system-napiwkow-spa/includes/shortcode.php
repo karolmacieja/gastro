@@ -1011,11 +1011,11 @@ function snspa_js_body() {
             html += '<div class="snspa-muted">Brak napiwków z karty ani serwisu w tym miesiącu.</div></div></div>';
             return html;
         }
-        html += '<div class="snspa-table-wrap"><table class="snspa-table"><thead><tr><th>Lp.</th><th>Kelner</th><th>Z karty (' + d.pct + '%)</th><th>Z serwisu (' + d.pct + '%)</th><th>Razem</th><th>Kwota otrzymana</th></tr></thead><tbody>';
+        html += '<div class="snspa-table-wrap"><table class="snspa-table"><thead><tr><th>Lp.</th><th style="text-align:left;">Kelner</th><th>Z karty (' + d.pct + '%)</th><th>Z serwisu (' + d.pct + '%)</th><th>Razem</th><th>Kwota otrzymana</th></tr></thead><tbody>';
         d.rows.forEach(function(r, i){
-            html += '<tr><td>' + (i+1) + '</td><td><b>' + esc(r.name) + '</b></td><td>' + srAmt(r.card) + '</td><td>' + srAmt(r.service) + '</td><td><b>' + srAmt(r.total) + '</b></td><td style="color:#9CA3AF;">(wpisuje sekcja)</td></tr>';
+            html += '<tr><td>' + (i+1) + '</td><td><b>' + esc(r.name) + '</b></td><td style="text-align:right;">' + srAmt(r.card) + '</td><td style="text-align:right;">' + srAmt(r.service) + '</td><td style="text-align:right;"><b>' + srAmt(r.total) + '</b></td><td style="color:#9CA3AF;text-align:right;">(wpisuje sekcja)</td></tr>';
         });
-        html += '</tbody><tfoot><tr><td></td><td><b>RAZEM</b></td><td><b>' + srAmt(d.totals.card) + '</b></td><td><b>' + srAmt(d.totals.service) + '</b></td><td><b>' + srAmt(d.totals.total) + '</b></td><td></td></tr></tfoot></table></div>';
+        html += '</tbody><tfoot><tr><td></td><td><b>RAZEM</b></td><td style="text-align:right;"><b>' + srAmt(d.totals.card) + '</b></td><td style="text-align:right;"><b>' + srAmt(d.totals.service) + '</b></td><td style="text-align:right;"><b>' + srAmt(d.totals.total) + '</b></td><td></td></tr></tfoot></table></div>';
         html += '<button class="snspa-save" data-sr-pdf="1"><i class="fas fa-file-download"></i> Pobierz PDF — ' + srDeptLabel(d.dept) + ', ' + SR_MONTHS[d.month-1].toLowerCase() + ' ' + d.year + '</button>';
         html += '</div></div>';
         return html;
