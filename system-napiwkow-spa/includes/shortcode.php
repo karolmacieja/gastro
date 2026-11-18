@@ -1021,8 +1021,8 @@ function snspa_js_body() {
         return html;
     }
 
-    // PDF do druku (A4 pionowo): tytuł, sekcja, miesiąc, tabela z wysokimi wierszami
-    // i pustą rubryką na kwotę, suma do wpisania ręcznie, miejsca na podpisy.
+    // PDF do druku (A4 pionowo): tytuł, sekcja, miesiąc i tabela z wysokimi wierszami
+    // oraz pustą rubryką na kwotę (bez opisu i bez miejsc na podpisy).
     function sectionReportPdf(){
         var d = state.srData;
         if (!d || !d.rows || !d.rows.length) return;
@@ -1037,8 +1037,6 @@ function snspa_js_body() {
                 doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(10); doc.setTextColor(75,85,99);
                 doc.text('Miesiąc: ' + period, M, M + 13);
                 doc.text('Wygenerowano: ' + d.generated.split(' ')[0].split('-').reverse().join('.') + ' ' + (d.generated.split(' ')[1] || ''), W - M, M + 13, { align: 'right' });
-                doc.setFontSize(8.5);
-                doc.text(doc.splitTextToSize('Kwoty przypadające ' + (d.dept === 'bar' ? 'barowi' : 'kuchni') + ' od każdego kelnera: ' + d.pct + '% napiwków z karty i ' + d.pct + '% z serwisu (netto, z uwzględnieniem wyjątków procentowych) oraz ich suma. Rubrykę „Kwota otrzymana” wypełnia sekcja długopisem po otrzymaniu przelewu. Gotówka rozliczana jest na bieżąco i nie jest ujęta w raporcie.', W - 2*M), M, M + 20);
                 doc.setTextColor(0,0,0);
 
                 var body = d.rows.map(function(r, i){ return [String(i+1), r.name, srAmt(r.card), srAmt(r.service), srAmt(r.total), '']; });
@@ -1046,7 +1044,7 @@ function snspa_js_body() {
                     head: [['Lp.', 'Kelner', 'Z karty (' + d.pct + '%)', 'Z serwisu (' + d.pct + '%)', 'Razem', 'Kwota otrzymana (zł)']],
                     body: body,
                     foot: [['', 'RAZEM', srAmt(d.totals.card), srAmt(d.totals.service), srAmt(d.totals.total), '']],
-                    startY: M + 32,
+                    startY: M + 20,
                     margin: { left: M, right: M },
                     theme: 'grid',
                     styles: { font: 'DejaVuSans', fontSize: 10, minCellHeight: 11, valign: 'middle', lineColor: [156,163,175], lineWidth: 0.2, textColor: [17,24,39] },
@@ -1060,15 +1058,6 @@ function snspa_js_body() {
                         5: { cellWidth: 38 }
                     },
                     didParseCell: function(c){ if (c.section === 'foot' && c.column.index >= 2 && c.column.index <= 4) c.cell.styles.halign = 'right'; }
-                });
-                var y = doc.lastAutoTable.finalY + 22;
-                if (y > H - 30){ doc.addPage(); y = M + 20; }
-                doc.setFontSize(9); doc.setTextColor(75,85,99);
-                var colW = (W - 2*M - 20) / 2;
-                [[M, 'Data i podpis osoby odbierającej (' + srDeptLabel(d.dept).toLowerCase() + ')'], [M + colW + 20, 'Podpis administratora']].forEach(function(c){
-                    doc.setDrawColor(107,114,128); doc.setLineWidth(0.3);
-                    doc.line(c[0], y, c[0] + colW, y);
-                    doc.text(c[1], c[0], y + 5);
                 });
                 var pages = doc.internal.getNumberOfPages();
                 for (var p = 1; p <= pages; p++){

@@ -469,6 +469,6 @@ uprawnienie manage_options sprawdzane także po stronie serwera, endpoint GET /s
 Wybór miesiąca i sekcji (Kuchnia albo Bar), podgląd i „Pobierz PDF” (A4 pionowo).
 Jeden wiersz na kelnera za cały miesiąc: kwota dla sekcji z karty (10% bar / 20% kuchnia),
 z serwisu, ich suma (dodawane są kwoty) oraz pusta rubryka „Kwota otrzymana (zł)” do
-wpisania długopisem; wiersz RAZEM i miejsca na podpisy. Kwoty liczone jak w „Rozliczeniu
+wpisania długopisem oraz wiersz RAZEM (bez opisu i bez miejsc na podpisy). Kwoty liczone jak w „Rozliczeniu
 z kelnerami” (netto po podatku 26+, z wyjątkami procentowymi). Raport nie zawiera pełnych
 napiwków kelnerów ani udziału drugiej sekcji; gotówka jest pominięta.
