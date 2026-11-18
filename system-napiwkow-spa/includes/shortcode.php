@@ -1036,7 +1036,6 @@ function snspa_js_body() {
                 doc.text('Raport napiwków — ' + dept, M, M + 6);
                 doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(10); doc.setTextColor(75,85,99);
                 doc.text('Miesiąc: ' + period, M, M + 13);
-                doc.text('Wygenerowano: ' + d.generated.split(' ')[0].split('-').reverse().join('.') + ' ' + (d.generated.split(' ')[1] || ''), W - M, M + 13, { align: 'right' });
                 doc.setTextColor(0,0,0);
 
                 var body = d.rows.map(function(r, i){ return [String(i+1), r.name, srAmt(r.card), srAmt(r.service), srAmt(r.total), '']; });
@@ -1059,11 +1058,6 @@ function snspa_js_body() {
                     },
                     didParseCell: function(c){ if (c.section === 'foot' && c.column.index >= 2 && c.column.index <= 4) c.cell.styles.halign = 'right'; }
                 });
-                var pages = doc.internal.getNumberOfPages();
-                for (var p = 1; p <= pages; p++){
-                    doc.setPage(p); doc.setFontSize(8); doc.setTextColor(156,163,175);
-                    doc.text('Raport napiwków — ' + dept + ' — ' + period + ' — strona ' + p + ' z ' + pages, W / 2, H - 8, { align: 'center' });
-                }
                 doc.save('Raport_napiwkow_' + srDeptLabel(d.dept) + '_' + d.year + '-' + (d.month < 10 ? '0' : '') + d.month + '.pdf');
             } catch (err) {
                 alert('Błąd generowania PDF: ' + (err && err.message ? err.message : err));
