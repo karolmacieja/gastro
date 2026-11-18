@@ -970,15 +970,13 @@ function snspa_js_body() {
 
     /* ---------------------------------------------------------
      * RAPORT DLA SEKCJI (kuchnia / bar) — tylko administrator strony.
-     * Jeden wiersz na kelnera za cały miesiąc: % z karty, % z serwisu,
-     * % razem i pusta rubryka „Kwota otrzymana” do wpisania długopisem.
-     * Bez kwot napiwków i bez procentów drugiej sekcji.
+     * Jeden wiersz na kelnera za cały miesiąc: kwota dla sekcji z karty
+     * (10% bar / 20% kuchnia), z serwisu, suma i pusta rubryka „Kwota
+     * otrzymana” do wpisania długopisem. Bez pełnych napiwków kelnera
+     * i bez udziału drugiej sekcji.
      * --------------------------------------------------------- */
     var SR_MONTHS = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
-    function srPct(v){
-        if (v === null || v === undefined) return '—';
-        return (Math.round(v * 100) / 100).toLocaleString('pl-PL', {maximumFractionDigits: 2}) + '%';
-    }
+    function srAmt(v){ return (v > 0) ? fmt(v) + ' zł' : '—'; }
     function srDeptLabel(d){ return d === 'bar' ? 'Bar' : 'Kuchnia'; }
 
     function loadSectionReport(){
@@ -1003,7 +1001,7 @@ function snspa_js_body() {
         for (var i=1;i<=12;i++) html += '<option value="' + i + '"' + (i===state.srM?' selected':'') + '>' + SR_MONTHS[i-1] + '</option>';
         html += '</select><input type="number" id="snspa-sr-y" value="' + state.srY + '" style="width:80px;"></div>';
         html += '</div>';
-        html += '<div class="snspa-muted" style="margin-top:8px;">Raport pokazuje sekcji wyłącznie procenty, jakie przypadają jej od każdego kelnera — bez kwot napiwków i bez udziałów drugiej sekcji. Kwotę otrzymaną sekcja wpisuje długopisem na wydruku. Gotówka nie jest uwzględniana.</div>';
+        html += '<div class="snspa-muted" style="margin-top:8px;">Raport pokazuje kwoty przypadające sekcji od każdego kelnera: ' + (state.srDept==='bar' ? '10%' : '20%') + ' z karty i ' + (state.srDept==='bar' ? '10%' : '20%') + ' z serwisu (netto, z wyjątkami procentowymi) oraz ich sumę — bez pełnych napiwków kelnerów i bez udziału drugiej sekcji. Kwotę otrzymaną sekcja wpisuje długopisem na wydruku. Gotówka nie jest uwzględniana.</div>';
         html += '</div>';
 
         if (!d){ html += '<div class="snspa-loading">Ładowanie…</div></div>'; return html; }
@@ -1013,11 +1011,11 @@ function snspa_js_body() {
             html += '<div class="snspa-muted">Brak napiwków z karty ani serwisu w tym miesiącu.</div></div></div>';
             return html;
         }
-        html += '<div class="snspa-table-wrap"><table class="snspa-table"><thead><tr><th>Lp.</th><th>Kelner</th><th>% z karty</th><th>% z serwisu</th><th>% razem</th><th>Kwota otrzymana</th></tr></thead><tbody>';
+        html += '<div class="snspa-table-wrap"><table class="snspa-table"><thead><tr><th>Lp.</th><th>Kelner</th><th>Z karty (' + d.pct + '%)</th><th>Z serwisu (' + d.pct + '%)</th><th>Razem</th><th>Kwota otrzymana</th></tr></thead><tbody>';
         d.rows.forEach(function(r, i){
-            html += '<tr><td>' + (i+1) + '</td><td><b>' + esc(r.name) + '</b></td><td>' + srPct(r.card) + '</td><td>' + srPct(r.service) + '</td><td><b>' + srPct(r.total) + '</b></td><td style="color:#9CA3AF;">(wpisuje sekcja)</td></tr>';
+            html += '<tr><td>' + (i+1) + '</td><td><b>' + esc(r.name) + '</b></td><td>' + srAmt(r.card) + '</td><td>' + srAmt(r.service) + '</td><td><b>' + srAmt(r.total) + '</b></td><td style="color:#9CA3AF;">(wpisuje sekcja)</td></tr>';
         });
-        html += '</tbody></table></div>';
+        html += '</tbody><tfoot><tr><td></td><td><b>RAZEM</b></td><td><b>' + srAmt(d.totals.card) + '</b></td><td><b>' + srAmt(d.totals.service) + '</b></td><td><b>' + srAmt(d.totals.total) + '</b></td><td></td></tr></tfoot></table></div>';
         html += '<button class="snspa-save" data-sr-pdf="1"><i class="fas fa-file-download"></i> Pobierz PDF — ' + srDeptLabel(d.dept) + ', ' + SR_MONTHS[d.month-1].toLowerCase() + ' ' + d.year + '</button>';
         html += '</div></div>';
         return html;
@@ -1040,14 +1038,14 @@ function snspa_js_body() {
                 doc.text('Miesiąc: ' + period, M, M + 13);
                 doc.text('Wygenerowano: ' + d.generated.split(' ')[0].split('-').reverse().join('.') + ' ' + (d.generated.split(' ')[1] || ''), W - M, M + 13, { align: 'right' });
                 doc.setFontSize(8.5);
-                doc.text(doc.splitTextToSize('Procent napiwków kelnera (netto) przypadający ' + (d.dept === 'bar' ? 'barowi' : 'kuchni') + ' — osobno z karty i z serwisu oraz łącznie. Rubrykę „Kwota otrzymana” wypełnia sekcja długopisem po otrzymaniu przelewu. Gotówka rozliczana jest na bieżąco i nie jest ujęta w raporcie.', W - 2*M), M, M + 20);
+                doc.text(doc.splitTextToSize('Kwoty przypadające ' + (d.dept === 'bar' ? 'barowi' : 'kuchni') + ' od każdego kelnera: ' + d.pct + '% napiwków z karty i ' + d.pct + '% z serwisu (netto, z uwzględnieniem wyjątków procentowych) oraz ich suma. Rubrykę „Kwota otrzymana” wypełnia sekcja długopisem po otrzymaniu przelewu. Gotówka rozliczana jest na bieżąco i nie jest ujęta w raporcie.', W - 2*M), M, M + 20);
                 doc.setTextColor(0,0,0);
 
-                var body = d.rows.map(function(r, i){ return [String(i+1), r.name, srPct(r.card), srPct(r.service), srPct(r.total), '']; });
+                var body = d.rows.map(function(r, i){ return [String(i+1), r.name, srAmt(r.card), srAmt(r.service), srAmt(r.total), '']; });
                 doc.autoTable({
-                    head: [['Lp.', 'Kelner', '% z karty', '% z serwisu', '% razem', 'Kwota otrzymana (zł)']],
+                    head: [['Lp.', 'Kelner', 'Z karty (' + d.pct + '%)', 'Z serwisu (' + d.pct + '%)', 'Razem', 'Kwota otrzymana (zł)']],
                     body: body,
-                    foot: [['', 'RAZEM', '', '', '', '']],
+                    foot: [['', 'RAZEM', srAmt(d.totals.card), srAmt(d.totals.service), srAmt(d.totals.total), '']],
                     startY: M + 32,
                     margin: { left: M, right: M },
                     theme: 'grid',
@@ -1055,12 +1053,13 @@ function snspa_js_body() {
                     headStyles: { font: 'DejaVuSans', fontStyle: 'bold', fillColor: [37,99,235], textColor: 255, minCellHeight: 9 },
                     footStyles: { font: 'DejaVuSans', fontStyle: 'bold', fillColor: [241,245,249], textColor: [31,41,55] },
                     columnStyles: {
-                        0: { cellWidth: 11, halign: 'center' },
-                        2: { cellWidth: 23, halign: 'center' },
-                        3: { cellWidth: 25, halign: 'center' },
-                        4: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
-                        5: { cellWidth: 44 }
-                    }
+                        0: { cellWidth: 10, halign: 'center' },
+                        2: { cellWidth: 27, halign: 'right' },
+                        3: { cellWidth: 27, halign: 'right' },
+                        4: { cellWidth: 27, halign: 'right', fontStyle: 'bold' },
+                        5: { cellWidth: 38 }
+                    },
+                    didParseCell: function(c){ if (c.section === 'foot' && c.column.index >= 2 && c.column.index <= 4) c.cell.styles.halign = 'right'; }
                 });
                 var y = doc.lastAutoTable.finalY + 22;
                 if (y > H - 30){ doc.addPage(); y = M + 20; }

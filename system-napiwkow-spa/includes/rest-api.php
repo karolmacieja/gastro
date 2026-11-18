@@ -165,15 +165,11 @@ add_action('rest_api_init', function () {
 /* -----------------------------------------------------------
  * GET /section-report?m=&y=&dept=kuchnia|bar — raport miesięczny dla sekcji.
  * Tylko administrator strony (manage_options). Dla każdego kelnera, który
- * w miesiącu miał napiwki z karty lub serwisu: jaki PROCENT przypada
- * wybranej sekcji — osobno z karty, z serwisu i łącznie. Kwot NIE zwracamy
- * (sekcja widzi tylko swoje procenty); kwotę otrzymaną sekcja wpisuje
- * długopisem na wydruku. Gotówka pominięta — rozliczana na bieżąco.
- *
- * Procent miesięczny = średnia ważona kwotą netto (po ewentualnym podatku),
- * czyli dokładnie stawka, z jaką liczy się „Rozliczenie z kelnerami” —
- * przy wyjątkach procentowych na pojedyncze dni wychodzi wartość pośrednia.
- * „Razem” = łączny udział sekcji w karcie + serwisie tego kelnera.
+ * w miesiącu miał napiwki z karty lub serwisu: KWOTA przypadająca wybranej
+ * sekcji z karty (domyślnie 10% bar / 20% kuchnia), z serwisu i ich suma.
+ * Pełnych napiwków kelnera ani udziału drugiej sekcji nie zwracamy.
+ * Kwoty liczone jak w „Rozliczeniu z kelnerami”: od netto (podatek 26+),
+ * z wyjątkami procentowymi na pojedyncze dni. Gotówka pominięta.
  * ----------------------------------------------------------- */
 function snspa_rest_section_report_permission() {
     return current_user_can('manage_options');
@@ -188,43 +184,22 @@ function snspa_rest_get_section_report(WP_REST_Request $req) {
 }
 
 function snspa_get_section_report_data($m, $y, $dept) {
-    global $wpdb;
-    $pct_key = ($dept === 'bar') ? 'bar' : 'kitchen';
-    $tax = snspa_tax_settings();
-    $month_overrides = snspa_get_month_percent_overrides($m, $y);
-    $sources = [
-        'card'    => ["{$wpdb->prefix}sn_waiter_tips", $tax['cardActive']],
-        'service' => ["{$wpdb->prefix}sn_waiter_service", $tax['servActive']],
-    ];
-
+    $data = snspa_get_waiter_settlement_data($m, $y, $dept);
     $rows = [];
-    foreach (get_users(['role' => 'kelner', 'orderby' => 'display_name']) as $w) {
-        $net = ['card' => 0, 'service' => 0];
-        $share = ['card' => 0, 'service' => 0];
-        foreach ($sources as $src => $conf) {
-            $entries = $wpdb->get_results($wpdb->prepare("SELECT date, amount FROM {$conf[0]} WHERE waiter_id=%d AND MONTH(date)=%d AND YEAR(date)=%d", $w->ID, $m, $y));
-            foreach ($entries as $e) {
-                $amt = floatval($e->amount);
-                if ($amt <= 0) continue;
-                $ex = snspa_is_tax_exempt($w->ID, $e->date);
-                $n = ($conf[1] && !$ex) ? $amt * (1 - $tax['rate']) : $amt;
-                $pct = snspa_percent_from_month_map($month_overrides, $e->date, $w->ID);
-                $net[$src] += $n;
-                $share[$src] += $n * $pct[$src][$pct_key];
-            }
-        }
-        if ($net['card'] <= 0 && $net['service'] <= 0) continue;
-        $p = function ($a, $b) { return $b > 0 ? round($a / $b * 100, 2) : null; };
-        $rows[] = [
-            'id'      => $w->ID,
-            'name'    => $w->display_name,
-            'card'    => $p($share['card'], $net['card']),
-            'service' => $p($share['service'], $net['service']),
-            'total'   => $p($share['card'] + $share['service'], $net['card'] + $net['service']),
-        ];
+    foreach ($data['rows'] as $r) {
+        $card = round($r['owedCard'], 2);
+        $service = round($r['owedService'], 2);
+        if ($card <= 0 && $service <= 0) continue;
+        $rows[] = ['id' => $r['id'], 'name' => $r['name'], 'card' => $card, 'service' => $service, 'total' => round($card + $service, 2)];
     }
-
-    return ['dept' => $dept, 'month' => $m, 'year' => $y, 'rows' => $rows, 'generated' => current_time('Y-m-d H:i')];
+    usort($rows, function ($a, $b) { return strcoll($a['name'], $b['name']); });
+    $sum = function ($k) use ($rows) { return round(array_sum(array_column($rows, $k)), 2); };
+    return [
+        'dept' => $dept, 'month' => $m, 'year' => $y, 'rows' => $rows,
+        'pct' => $dept === 'bar' ? 10 : 20,
+        'totals' => ['card' => $sum('card'), 'service' => $sum('service'), 'total' => $sum('total')],
+        'generated' => current_time('Y-m-d H:i'),
+    ];
 }
 
 // Administrator zawsze może; manager napiwków — tylko jeśli włączone w Ustawieniach.
