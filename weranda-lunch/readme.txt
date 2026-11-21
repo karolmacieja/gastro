@@ -1,5 +1,5 @@
 === Weranda Lunch Menu Generator ===
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 Requires PHP: 7.4
 
 Generator karty lunchowej (A4, dwie identyczne połówki do przecięcia) w panelu GastroFlowx.
@@ -26,6 +26,13 @@ Pliki: assets/lunch-layout.js (silnik układu), assets/app.js (panel), assets/fo
 (pdf-lib 1.17.1, @pdf-lib/fontkit 1.1.1 — dołączone lokalnie).
 
 == Changelog ==
+
+= 2.1.0 =
+* Szablony karty: w Ustawieniach PDF można dodać kolejne szablony (kopia istniejącego), zmienić nazwę, usunąć i ustawić domyślny. Każdy szablon ma własną kolejność, położenie, czcionki, logo, stopkę i ustawienia strony.
+* Nowa tabela „Kolejność i położenie”: strzałki zmieniają kolejność elementów; położenie „pod poprzednim” / „w linii poprzedniego” (np. cena obok nagłówka) / „stałe miejsce” (pt od góry); wyrównanie środek / do lewej / do prawej i przesunięcie w poziomie.
+* Generator: wybór szablonu karty (zapamiętywany w szkicu); bez wyboru — szablon domyślny.
+* Ceny są wspólne dla wszystkich szablonów — zmiana w jednym zmienia je we wszystkich.
+* Dotychczasowy układ staje się „Szablonem podstawowym” — wydruk po aktualizacji wygląda tak samo.
 = 2.0.0 =
 * Karta generowana z danych zamiast nakładania tekstu na szablon PDF.
 * Ceny, nagłówki, stopka, czcionki, rozmiary, odstępy, logo i układ edytowane z frontu (Ustawienia PDF).

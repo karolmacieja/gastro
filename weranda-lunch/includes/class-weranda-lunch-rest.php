@@ -135,6 +135,29 @@ class Weranda_Lunch_Rest {
 
         // --- Szablony PDF (wersje < 2.0.0; trasy zostają dla zgodności) ---
 
+        register_rest_route( self::NS, '/layouts', array(
+            'methods'             => 'POST',
+            'callback'            => self::safe( array( __CLASS__, 'create_layout' ) ),
+            'permission_callback' => self::safe_permission( array( __CLASS__, 'is_admin' ) ),
+        ) );
+        register_rest_route( self::NS, '/layouts/(?P<id>[a-z0-9]+)', array(
+            array(
+                'methods'             => 'POST',
+                'callback'            => self::safe( array( __CLASS__, 'update_layout' ) ),
+                'permission_callback' => self::safe_permission( array( __CLASS__, 'is_admin' ) ),
+            ),
+            array(
+                'methods'             => 'DELETE',
+                'callback'            => self::safe( array( __CLASS__, 'delete_layout' ) ),
+                'permission_callback' => self::safe_permission( array( __CLASS__, 'is_admin' ) ),
+            ),
+        ) );
+        register_rest_route( self::NS, '/layouts/(?P<id>[a-z0-9]+)/default', array(
+            'methods'             => 'POST',
+            'callback'            => self::safe( array( __CLASS__, 'set_default_layout' ) ),
+            'permission_callback' => self::safe_permission( array( __CLASS__, 'is_admin' ) ),
+        ) );
+
         register_rest_route( self::NS, '/templates', array(
             'methods'             => 'POST',
             'callback'            => self::safe( array( __CLASS__, 'create_template' ) ),
@@ -170,6 +193,9 @@ class Weranda_Lunch_Rest {
             'isAdmin'        => self::is_admin(),
             // Układ karty (null = domyślny z assets/lunch-layout.js, odwzorowany z Canvy).
             'layout'         => get_option( 'weranda_lunch_layout', null ),
+            // Szablony karty (od 2.1): [ { id, name, layout } ], pierwszy = podstawowy.
+            'layouts'        => self::layouts(),
+            'defaultLayout'  => self::default_layout_id(),
         );
     }
 
@@ -255,6 +281,10 @@ class Weranda_Lunch_Rest {
                 'lh'      => self::n( $b['lh'] ?? null, 0.8, 3, 1.4 ),
                 'gap'     => self::n( $b['gap'] ?? null, -200, 400, 0 ),
                 'enabled' => empty( $b['enabled'] ) ? 0 : 1,
+                'align'   => in_array( $b['align'] ?? '', array( 'left', 'right' ), true ) ? $b['align'] : 'center',
+                'dx'      => self::n( $b['dx'] ?? null, -595.5, 595.5, 0 ),
+                'pos'     => in_array( $b['pos'] ?? '', array( 'line', 'fixed' ), true ) ? $b['pos'] : 'flow',
+                'top'     => self::n( $b['top'] ?? null, 0, 842.25, 0 ),
             );
         }
         return $out;
@@ -268,7 +298,109 @@ class Weranda_Lunch_Rest {
         }
         $layout = self::sanitize_layout( isset( $json['layout'] ) ? $json['layout'] : array() );
         update_option( 'weranda_lunch_layout', $layout, false );
+        // Szablon podstawowy na liście szablonów też dostaje nowy układ.
+        $list = self::layouts();
+        foreach ( $list as &$t ) { if ( 'main' === $t['id'] ) $t['layout'] = $layout; }
+        unset( $t );
+        update_option( 'weranda_lunch_layouts', $list, false );
         return array( 'layout' => $layout );
+    }
+
+    /* ------------------------------------------------------------------
+     * Szablony karty — kilka nazwanych układów (każdy z własną kolejnością,
+     * położeniem i wyglądem bloków). Pierwszy („main”) powstaje z dotychczasowego
+     * układu, więc aktualizacja niczego nie zmienia w wydruku.
+     * ---------------------------------------------------------------- */
+
+    public static function layouts() {
+        $list = get_option( 'weranda_lunch_layouts', null );
+        if ( ! is_array( $list ) || ! $list ) {
+            $list = array( array(
+                'id'     => 'main',
+                'name'   => 'Szablon podstawowy',
+                'layout' => get_option( 'weranda_lunch_layout', null ),
+            ) );
+            update_option( 'weranda_lunch_layouts', $list, false );
+        }
+        return array_values( $list );
+    }
+
+    public static function default_layout_id() {
+        $ids = wp_list_pluck( self::layouts(), 'id' );
+        $def = get_option( 'weranda_lunch_default_layout', 'main' );
+        return in_array( $def, $ids, true ) ? $def : $ids[0];
+    }
+
+    private static function save_layouts( $list ) {
+        $list = array_values( $list );
+        update_option( 'weranda_lunch_layouts', $list, false );
+        // Zgodność wstecz: „weranda_lunch_layout” = układ szablonu podstawowego.
+        foreach ( $list as $t ) {
+            if ( 'main' === $t['id'] ) {
+                if ( $t['layout'] ) update_option( 'weranda_lunch_layout', $t['layout'], false );
+                else delete_option( 'weranda_lunch_layout' );
+            }
+        }
+        return array( 'layouts' => $list, 'defaultLayout' => self::default_layout_id() );
+    }
+
+    private static function layout_name( $v, $def ) {
+        $v = trim( sanitize_text_field( (string) $v ) );
+        return $v !== '' ? mb_substr( $v, 0, 60 ) : $def;
+    }
+
+    /** POST /layouts { name, from } — nowy szablon jako kopia istniejącego (albo domyślnego układu). */
+    public static function create_layout( WP_REST_Request $req ) {
+        $json = (array) $req->get_json_params();
+        $list = self::layouts();
+        if ( count( $list ) >= 20 ) {
+            return new WP_Error( 'too_many', 'Maksymalnie 20 szablonów.', array( 'status' => 400 ) );
+        }
+        $src = null;
+        foreach ( $list as $t ) {
+            if ( isset( $json['from'] ) && $t['id'] === $json['from'] ) $src = $t['layout'];
+        }
+        $id     = 'l' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $list[] = array( 'id' => $id, 'name' => self::layout_name( $json['name'] ?? '', 'Nowy szablon' ), 'layout' => $src );
+        $res       = self::save_layouts( $list );
+        $res['id'] = $id;
+        return $res;
+    }
+
+    /** POST /layouts/{id} { name?, layout?, reset? } — zmiana nazwy i/lub układu. */
+    public static function update_layout( WP_REST_Request $req ) {
+        $id   = (string) $req['id'];
+        $json = (array) $req->get_json_params();
+        $list = self::layouts();
+        $hit  = false;
+        foreach ( $list as &$t ) {
+            if ( $t['id'] !== $id ) continue;
+            $hit = true;
+            if ( isset( $json['name'] ) ) $t['name'] = self::layout_name( $json['name'], $t['name'] );
+            if ( ! empty( $json['reset'] ) ) $t['layout'] = null;
+            elseif ( isset( $json['layout'] ) ) $t['layout'] = self::sanitize_layout( $json['layout'] );
+        }
+        unset( $t );
+        if ( ! $hit ) return new WP_Error( 'not_found', 'Nie znaleziono szablonu.', array( 'status' => 404 ) );
+        return self::save_layouts( $list );
+    }
+
+    public static function delete_layout( WP_REST_Request $req ) {
+        $id   = (string) $req['id'];
+        $list = self::layouts();
+        if ( 'main' === $id ) return new WP_Error( 'protected', 'Szablonu podstawowego nie można usunąć.', array( 'status' => 400 ) );
+        $list = array_filter( $list, function ( $t ) use ( $id ) { return $t['id'] !== $id; } );
+        if ( get_option( 'weranda_lunch_default_layout' ) === $id ) delete_option( 'weranda_lunch_default_layout' );
+        return self::save_layouts( $list );
+    }
+
+    public static function set_default_layout( WP_REST_Request $req ) {
+        $id = (string) $req['id'];
+        if ( ! in_array( $id, wp_list_pluck( self::layouts(), 'id' ), true ) ) {
+            return new WP_Error( 'not_found', 'Nie znaleziono szablonu.', array( 'status' => 404 ) );
+        }
+        update_option( 'weranda_lunch_default_layout', $id );
+        return array( 'layouts' => self::layouts(), 'defaultLayout' => $id );
     }
 
     public static function save_draft( WP_REST_Request $req ) {
@@ -278,6 +410,8 @@ class Weranda_Lunch_Rest {
             'lunch'       => sanitize_textarea_field( (string) $req->get_param( 'lunch' ) ),
             'rec'         => sanitize_textarea_field( (string) $req->get_param( 'rec' ) ),
             'template_id' => sanitize_text_field( (string) $req->get_param( 'template_id' ) ),
+            // Szablon karty wybrany w Generatorze (pusty = domyślny).
+            'layout_id'   => sanitize_key( (string) $req->get_param( 'layout_id' ) ),
         );
         update_option( 'weranda_lunch_draft', $draft );
         if ( $draft['template_id'] ) {

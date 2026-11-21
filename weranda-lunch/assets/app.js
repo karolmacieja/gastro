@@ -144,7 +144,11 @@ function weranda_lunch_createVueApp() {
             isAdmin: !! cfg.isAdmin,
             loading: true,
 
-            // Układ karty (Ustawienia PDF): zapisany i edytowany (niezapisany) w zakładce Ustawienia.
+            // Szablony karty: [ { id, name, layout } ] (layout po L.merge). „layout” = szablon
+            // użyty w Generatorze, „layoutEdit” = edytowany w Ustawieniach (szablon editLayoutId).
+            layouts: [],
+            defaultLayoutId: 'main',
+            editLayoutId: 'main',
             layout: null,
             layoutEdit: null,
             layoutDirty: false,
@@ -153,7 +157,7 @@ function weranda_lunch_createVueApp() {
             layoutMsgError: false,
             previewInfo: null,
 
-            draft: { soup: '', weight: '', lunch: '', rec: '' },
+            draft: { soup: '', weight: '', lunch: '', rec: '', layout_id: '' },
             archive: [],
             checklist: [],
             newChecklistItem: '',
@@ -188,6 +192,10 @@ function weranda_lunch_createVueApp() {
         textBlocks() {
             return this.editBlocks.filter( b => b.kind === 'text' && ! b.price );
         },
+        editLayoutName() {
+            const t = this.layouts.find( x => x.id === this.editLayoutId );
+            return t ? t.name : '';
+        },
         priceSummary() {
             if ( ! this.layout ) return '';
             return this.layout.blocks.filter( b => b.price && +b.enabled && b.text ).map( b => ( b.short || b.label ) + ': ' + b.text ).join( ' · ' );
@@ -209,8 +217,11 @@ function weranda_lunch_createVueApp() {
         try {
             const data = await apiFetch( '/bootstrap' );
             if ( ! L ) throw new Error( 'Nie załadował się silnik układu (lunch-layout.js).' );
-            this.layout = L.merge( data.layout );
-            this.draft = Object.assign( { soup: '', weight: '', lunch: '', rec: '' }, data.draft || {} );
+            this.setLayouts( data.layouts && data.layouts.length ? data : { layouts: [ { id: 'main', name: 'Szablon podstawowy', layout: data.layout } ], defaultLayout: 'main' } );
+            this.draft = Object.assign( { soup: '', weight: '', lunch: '', rec: '', layout_id: '' }, data.draft || {} );
+            if ( ! this.layouts.some( t => t.id === this.draft.layout_id ) ) this.draft.layout_id = '';
+            this.layout = this.layoutById( this.draft.layout_id );
+            this.editLayoutId = this.draft.layout_id || this.defaultLayoutId;
             this.archive = data.archive || [];
             this.checklist = data.checklist || [];
             this.isAdmin = !! data.isAdmin;
@@ -243,7 +254,7 @@ function weranda_lunch_createVueApp() {
         switchTab( tab ) {
             this.activeTab = tab;
             if ( tab === 'settings' && ! this.layoutEdit ) {
-                this.layoutEdit = clone( this.layout );
+                this.layoutEdit = clone( this.layoutById( this.editLayoutId ) );
                 this.layoutDirty = false;
             }
             this.$nextTick( () => this.generatePreview() );
@@ -325,6 +336,7 @@ function weranda_lunch_createVueApp() {
                     weight: this.draft.weight || '',
                     lunch: this.draft.lunch || '',
                     rec: this.draft.rec || '',
+                    layout_id: this.draft.layout_id || '',
                 } );
                 await apiFetch( '/draft', { method: 'POST', body, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } } );
                 this.savingDraftLabel = true;
@@ -679,20 +691,120 @@ function weranda_lunch_createVueApp() {
             this.previewTimer = setTimeout( () => this.generatePreview(), 250 );
         },
 
+        /* ---------- Szablony karty ---------- */
+
+        setLayouts( data ) {
+            this.layouts = ( data.layouts || [] ).map( t => ( { id: t.id, name: t.name, layout: L.merge( t.layout ) } ) );
+            if ( ! this.layouts.length ) this.layouts = [ { id: 'main', name: 'Szablon podstawowy', layout: L.defaults() } ];
+            this.defaultLayoutId = this.layouts.some( t => t.id === data.defaultLayout ) ? data.defaultLayout : this.layouts[ 0 ].id;
+        },
+        /** Układ szablonu (pusty id / nieznany = domyślny). */
+        layoutById( id ) {
+            const t = this.layouts.find( x => x.id === id ) || this.layouts.find( x => x.id === this.defaultLayoutId ) || this.layouts[ 0 ];
+            return t.layout;
+        },
+        layoutLabel( t ) {
+            return t.name + ( t.id === this.defaultLayoutId ? ' (domyślny)' : '' );
+        },
+        /** Generator: wybór szablonu karty dla bieżącego lunchu. */
+        async onLayoutChoice() {
+            this.layout = this.layoutById( this.draft.layout_id );
+            this.queueDraftSave( true );
+            try { await this.loadAssets( this.layout ); } catch ( e ) { this.previewError = e.message; }
+            this.generatePreview();
+        },
+        /** Po zmianach na serwerze: odśwież listę, układ Generatora i (opcjonalnie) edytowany. */
+        applyLayouts( data, keepEdit ) {
+            this.setLayouts( data );
+            if ( ! this.layouts.some( t => t.id === this.draft.layout_id ) ) this.draft.layout_id = '';
+            if ( ! this.layouts.some( t => t.id === this.editLayoutId ) ) this.editLayoutId = this.defaultLayoutId;
+            this.layout = this.layoutById( this.draft.layout_id );
+            if ( ! keepEdit ) {
+                this.layoutEdit = clone( this.layoutById( this.editLayoutId ) );
+                this.layoutDirty = false;
+            }
+        },
+        selectEditLayout( id ) {
+            if ( id === this.editLayoutId ) return;
+            if ( this.layoutDirty && ! confirm( 'Masz niezapisane zmiany w szablonie „' + this.editLayoutName + '”. Porzucić je?' ) ) {
+                this.$nextTick( () => { this.$refs.editLayoutSelect && ( this.$refs.editLayoutSelect.value = this.editLayoutId ); } );
+                return;
+            }
+            this.editLayoutId = id;
+            this.layoutEdit = clone( this.layoutById( id ) );
+            this.layoutDirty = false;
+            this.layoutMsg = '';
+            this.loadAssets( this.layoutEdit ).then( () => this.generatePreview() );
+        },
+        async layoutRequest( path, method, body ) {
+            return apiFetch( path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify( body ) : undefined } );
+        },
+        async newLayout() {
+            if ( this.layoutDirty && ! confirm( 'Nowy szablon powstanie jako kopia ZAPISANEJ wersji szablonu „' + this.editLayoutName + '”. Niezapisane zmiany zostaną porzucone. Kontynuować?' ) ) return;
+            const name = prompt( 'Nazwa nowego szablonu (kopia „' + this.editLayoutName + '”):', this.editLayoutName + ' — kopia' );
+            if ( name === null ) return;
+            try {
+                const data = await this.layoutRequest( '/layouts', 'POST', { name, from: this.editLayoutId } );
+                this.editLayoutId = data.id;
+                this.applyLayouts( data );
+                this.layoutMsgError = false;
+                this.layoutMsg = 'Dodano szablon „' + this.editLayoutName + '”. Zmień kolejność i położenie elementów, a potem zapisz.';
+                this.generatePreview();
+            } catch ( e ) { this.layoutMsgError = true; this.layoutMsg = e.message; }
+        },
+        async renameLayout() {
+            const name = prompt( 'Nowa nazwa szablonu:', this.editLayoutName );
+            if ( name === null || ! name.trim() ) return;
+            try {
+                this.applyLayouts( await this.layoutRequest( '/layouts/' + this.editLayoutId, 'POST', { name } ), true );
+            } catch ( e ) { this.layoutMsgError = true; this.layoutMsg = e.message; }
+        },
+        async deleteLayout() {
+            if ( this.editLayoutId === 'main' ) return;
+            if ( ! confirm( 'Usunąć szablon „' + this.editLayoutName + '”? Tej operacji nie można cofnąć.' ) ) return;
+            try {
+                const data = await this.layoutRequest( '/layouts/' + this.editLayoutId, 'DELETE' );
+                this.editLayoutId = data.defaultLayout || 'main';
+                this.applyLayouts( data );
+                this.layoutMsgError = false;
+                this.layoutMsg = 'Usunięto szablon.';
+                this.generatePreview();
+            } catch ( e ) { this.layoutMsgError = true; this.layoutMsg = e.message; }
+        },
+        async makeDefaultLayout() {
+            try {
+                this.applyLayouts( await this.layoutRequest( '/layouts/' + this.editLayoutId + '/default', 'POST' ), true );
+                this.layoutMsgError = false;
+                this.layoutMsg = 'Szablon „' + this.editLayoutName + '” jest teraz domyślny w Generatorze.';
+                this.generatePreview();
+            } catch ( e ) { this.layoutMsgError = true; this.layoutMsg = e.message; }
+        },
+        moveBlock( i, dir ) {
+            const bl = this.layoutEdit.blocks, j = i + dir;
+            if ( j < 0 || j >= bl.length ) return;
+            bl.splice( j, 0, bl.splice( i, 1 )[ 0 ] );
+            this.onLayoutInput();
+        },
+
         async saveLayout() {
             this.savingLayout = true;
             this.layoutMsg = '';
             try {
-                const data = await apiFetch( '/layout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify( { layout: this.layoutEdit } ),
-                } );
-                this.layout = L.merge( data.layout );
-                this.layoutEdit = clone( this.layout );
-                this.layoutDirty = false;
+                const id = this.editLayoutId;
+                let data = await this.layoutRequest( '/layouts/' + id, 'POST', { layout: this.layoutEdit } );
+                // Ceny są wspólne dla wszystkich szablonów — przenosimy je do pozostałych.
+                const prices = {};
+                this.layoutEdit.blocks.forEach( b => { if ( b.price ) prices[ b.key ] = b.text; } );
+                for ( const t of data.layouts ) {
+                    if ( t.id === id ) continue;
+                    const lay = L.merge( t.layout );
+                    let changed = false;
+                    lay.blocks.forEach( b => { if ( b.price && prices[ b.key ] !== undefined && b.text !== prices[ b.key ] ) { b.text = prices[ b.key ]; changed = true; } } );
+                    if ( changed ) data = await this.layoutRequest( '/layouts/' + t.id, 'POST', { layout: lay } );
+                }
+                this.applyLayouts( data );
                 this.layoutMsgError = false;
-                this.layoutMsg = 'Zapisano. Nowe ustawienia obowiązują od teraz przy każdym generowaniu.';
+                this.layoutMsg = 'Zapisano szablon „' + this.editLayoutName + '”. Nowe ustawienia obowiązują od teraz przy każdym generowaniu.';
                 this.generatePreview();
             } catch ( e ) {
                 this.layoutMsgError = true;
@@ -703,7 +815,7 @@ function weranda_lunch_createVueApp() {
         },
 
         cancelLayout() {
-            this.layoutEdit = clone( this.layout );
+            this.layoutEdit = clone( this.layoutById( this.editLayoutId ) );
             this.layoutDirty = false;
             this.layoutMsg = '';
             this.generatePreview();
@@ -769,6 +881,13 @@ function weranda_lunch_createVueApp() {
                     </h3>
 
                     <div style="display:flex;flex-direction:column;gap:22px;">
+                        <div v-if="layouts.length > 1">
+                            <label class="wl-label">Szablon karty</label>
+                            <select v-model="draft.layout_id" @change="onLayoutChoice" class="wl-select">
+                                <option value="">{{ layoutLabel( layouts.find( t => t.id === defaultLayoutId ) ) }}</option>
+                                <option v-for="t in layouts.filter( t => t.id !== defaultLayoutId )" :key="t.id" :value="t.id">{{ t.name }}</option>
+                            </select>
+                        </div>
                         <div v-if="priceSummary" class="wl-price-note">
                             <i class="fas fa-tag"></i> Ceny na karcie: <strong>{{ priceSummary }}</strong>
                             <span v-if="isAdmin"> — zmienisz je w <a href="#" @click.prevent="switchTab('settings')">Ustawieniach PDF</a></span>
@@ -866,11 +985,25 @@ function weranda_lunch_createVueApp() {
                 <p style="font-size:14px;color:var(--rs-text-muted);margin:0;">Karta jest budowana z tych ustawień — bez szablonu PDF. Treść dań (zupa, gramatura, opis, polecamy) wpisuje się w zakładce Generator. Domyślne wartości odwzorowują szablon z Canvy 1:1. Podgląd zmienia się od razu; zmiany obowiązują wszystkich po kliknięciu „Zapisz ustawienia”.</p>
             </div>
 
+            <div class="wl-card" style="margin-bottom:20px;">
+                <h3><i class="fas fa-clone"></i> Szablony karty</h3>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                    <select ref="editLayoutSelect" :value="editLayoutId" @change="selectEditLayout( $event.target.value )" class="wl-select" style="flex:1 1 220px;max-width:360px;">
+                        <option v-for="t in layouts" :key="t.id" :value="t.id">{{ layoutLabel( t ) }}</option>
+                    </select>
+                    <button type="button" class="wl-btn wl-btn-secondary" @click="newLayout"><i class="fas fa-plus"></i> Nowy (kopia)</button>
+                    <button type="button" class="wl-btn wl-btn-secondary" @click="renameLayout"><i class="fas fa-i-cursor"></i> Zmień nazwę</button>
+                    <button type="button" class="wl-btn wl-btn-secondary" :disabled="editLayoutId === defaultLayoutId" @click="makeDefaultLayout"><i class="fas fa-star"></i> Ustaw jako domyślny</button>
+                    <button v-if="editLayoutId !== 'main'" type="button" class="wl-btn wl-btn-danger" @click="deleteLayout"><i class="fas fa-trash-alt"></i> Usuń</button>
+                </div>
+                <p class="wl-hint">Każdy szablon ma własną kolejność, położenie, czcionki, logo i stopkę. Ceny są wspólne — zmiana w jednym szablonie zmienia je we wszystkich. Szablon wybiera się w Generatorze; domyślny jest używany, gdy nie wybrano innego.</p>
+            </div>
+
             <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
                 <div style="flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:20px;">
 
                     <div class="wl-card">
-                        <h3><i class="fas fa-tag"></i> Ceny</h3>
+                        <h3><i class="fas fa-tag"></i> Ceny <span class="wl-hint-inline">(wspólne dla wszystkich szablonów)</span></h3>
                         <div class="wl-grid2">
                             <div v-for="b in priceBlocks" :key="b.key">
                                 <label class="wl-label">{{ b.label }}</label>
@@ -892,6 +1025,39 @@ function weranda_lunch_createVueApp() {
                                 <input type="text" v-model="layoutEdit.footer.text" @input="onLayoutInput" class="wl-input">
                             </div>
                         </div>
+                    </div>
+
+                    <div class="wl-card">
+                        <h3><i class="fas fa-arrows-alt"></i> Kolejność i położenie — {{ editLayoutName }}</h3>
+                        <div style="overflow-x:auto;">
+                            <table class="wl-coord-table wl-layout-table">
+                                <thead>
+                                    <tr><th>Kolejność</th><th>Element</th><th>Położenie</th><th title="Tylko dla „stałe miejsce”: górna krawędź elementu, pt od góry strony">Od góry (pt)</th><th>Wyrównanie</th><th title="Przesunięcie w poziomie, pt (minus = w lewo)">Przesunięcie X (pt)</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="( b, i ) in layoutEdit.blocks" :key="b.key" :style="{ opacity: +b.enabled ? 1 : 0.5 }">
+                                        <td style="white-space:nowrap;">
+                                            <button type="button" class="wl-btn wl-btn-secondary wl-btn-xs" :disabled="i === 0" @click="moveBlock( i, -1 )" title="Wyżej"><i class="fas fa-arrow-up"></i></button>
+                                            <button type="button" class="wl-btn wl-btn-secondary wl-btn-xs" :disabled="i === layoutEdit.blocks.length - 1" @click="moveBlock( i, 1 )" title="Niżej"><i class="fas fa-arrow-down"></i></button>
+                                        </td>
+                                        <td style="text-align:left;"><strong>{{ b.label }}</strong></td>
+                                        <td><select v-model="b.pos" @change="onLayoutInput" class="wl-select wl-select-sm">
+                                            <option value="flow">pod poprzednim</option>
+                                            <option value="line">w linii poprzedniego</option>
+                                            <option value="fixed">stałe miejsce</option>
+                                        </select></td>
+                                        <td><input type="number" step="0.5" min="0" v-model.number="b.top" @input="onLayoutInput" :disabled="b.pos !== 'fixed'"></td>
+                                        <td><select v-model="b.align" @change="onLayoutInput" class="wl-select wl-select-sm">
+                                            <option value="center">środek</option>
+                                            <option value="left">do lewej</option>
+                                            <option value="right">do prawej</option>
+                                        </select></td>
+                                        <td><input type="number" step="0.5" v-model.number="b.dx" @input="onLayoutInput"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="wl-hint"><b>Pod poprzednim</b> — element idzie pod poprzednim z „odstępem nad” (tabela niżej). <b>W linii poprzedniego</b> — na tej samej wysokości co poprzedni element (np. cena obok nagłówka: ustaw cenę „do prawej”, nagłówek „do lewej”); odstęp przesuwa go w pionie. <b>Stałe miejsce</b> — zawsze na podanej wysokości, niezależnie od długości pozostałej treści. Wyrównanie liczy się w kolumnie o „maks. szerokości linii” wokół środka połówki.</p>
                     </div>
 
                     <div class="wl-card">
@@ -921,7 +1087,7 @@ function weranda_lunch_createVueApp() {
                                 </tbody>
                             </table>
                         </div>
-                        <p class="wl-hint">Pierwszy element zaczyna się na „Początku treści” (sekcja Strona). Każdy kolejny — pod poprzednim, z podanym odstępem; puste pola z panelu nie zajmują miejsca, więc dłuższa zupa sama przesuwa resztę w dół.</p>
+                        <p class="wl-hint">Pierwszy element zaczyna się na „Początku treści” (sekcja Strona). Każdy kolejny „pod poprzednim” — z podanym odstępem; puste pola z panelu nie zajmują miejsca, więc dłuższa zupa sama przesuwa resztę w dół.</p>
                     </div>
 
                     <div class="wl-card">
@@ -964,7 +1130,7 @@ function weranda_lunch_createVueApp() {
                     </div>
 
                     <div class="wl-card wl-settings-actions">
-                        <button type="button" class="wl-btn wl-btn-primary" :disabled="savingLayout || !layoutDirty" @click="saveLayout"><i class="fas fa-save"></i> {{ savingLayout ? 'Zapisywanie…' : 'Zapisz ustawienia' }}</button>
+                        <button type="button" class="wl-btn wl-btn-primary" :disabled="savingLayout || !layoutDirty" @click="saveLayout"><i class="fas fa-save"></i> {{ savingLayout ? 'Zapisywanie…' : 'Zapisz szablon „' + editLayoutName + '”' }}</button>
                         <button type="button" class="wl-btn wl-btn-secondary" :disabled="!layoutDirty" @click="cancelLayout"><i class="fas fa-undo"></i> Anuluj zmiany</button>
                         <button type="button" class="wl-btn wl-btn-warning" @click="restoreDefaults"><i class="fas fa-magic"></i> Przywróć domyślne (Canva)</button>
                         <span v-if="layoutDirty && !layoutMsg" class="wl-hint-inline">Masz niezapisane zmiany.</span>

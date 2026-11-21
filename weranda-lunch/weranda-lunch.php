@@ -2,14 +2,14 @@
 /*
 Plugin Name: Weranda Lunch Menu Generator
 Description: Generator PDF karty lunchowej (SPA Vue 3) — karta budowana w całości z danych: treść dań z panelu, a nagłówki, ceny, logo, czcionki i układ w Ustawieniach PDF (z frontu). Wymaga roli "lunch" lub "administrator". Shortcode: [weranda_lunch_panel]
-Version: 2.0.0
+Version: 2.1.0
 Author: Weranda
 Text Domain: weranda-lunch
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'WERANDA_LUNCH_VERSION', '2.0.0' );
+define( 'WERANDA_LUNCH_VERSION', '2.1.0' );
 define( 'WERANDA_LUNCH_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WERANDA_LUNCH_URL', plugin_dir_url( __FILE__ ) );
 

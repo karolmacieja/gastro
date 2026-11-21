@@ -170,3 +170,7 @@
 .wl-ok-text{ color:var(--rs-success); font-size:14px; font-weight:600; }
 .wl-err-text{ color:var(--rs-danger); font-size:14px; font-weight:600; }
 .wl-input.wl-color{ padding:4px; height:42px; }
+
+/* 2.1 — szablony karty: przyciski kolejności w tabeli położenia */
+.wl-btn.wl-btn-xs{ padding:4px 8px; min-height:0; height:auto; font-size:12px; line-height:1.2; }
+.wl-layout-table input[type=number]:disabled{ opacity:.45; }

@@ -18,6 +18,17 @@
  * Kolejny blok zaczyna się pod dolną krawędzią poprzedniego + odstęp (pt).
  * Domyślne odstępy wyliczono z linii bazowych oryginalnych PDF z Canvy.
  *
+ * Położenie każdego bloku (od 2.1):
+ *   pos 'flow'  — pod poprzednim blokiem + odstęp (domyślnie, jak w Canvie),
+ *   pos 'line'  — w tej samej wysokości co poprzedni blok (+ odstęp), np. cena
+ *                 obok nagłówka; nie przesuwa kolejnych bloków niżej, niż sięga
+ *                 wyższy z dwóch,
+ *   pos 'fixed' — w stałym miejscu: górna krawędź = top (pt od góry strony);
+ *                 nie wpływa na bloki „flow”.
+ *   align 'center' | 'left' | 'right' — względem kolumny o szerokości
+ *                 max_width wokół środka połówki; dx — przesunięcie w poziomie (pt).
+ * Kolejność bloków = kolejność w tablicy blocks (zmieniana w Ustawieniach).
+ *
  * Ten sam plik działa w przeglądarce (window.WerandaLunchLayout) i w Node
  * (module.exports) — dzięki temu układ można testować poza WordPressem.
  */
@@ -99,15 +110,15 @@
 				top: 783.21,
 			},
 			blocks: [
-				{ key: 'soup_title',  label: 'Nagłówek zupy',       kind: 'text',  text: 'zupa\nprzy zakupie lunchu', font: 'Poppins-Black',           size: 21,   lh: 1.3934, gap: 0,     enabled: 1 },
-				{ key: 'soup_price',  label: 'Cena zupy',           kind: 'text',  text: '14 zł',                     font: 'Poppins-Black',           size: 21,   lh: 1.3934, gap: 0,     enabled: 1, price: 1, short: 'zupa' },
-				{ key: 'soup',        label: 'Zupa dnia',           kind: 'field', field: 'soup',                      font: 'Poppins-ExtraLight',      size: 19,   lh: 1.3821, gap: -0.05, enabled: 1 },
-				{ key: 'lunch_title', label: 'Nagłówek lunchu',     kind: 'text',  text: 'lunch dnia',                font: 'Poppins-Black',           size: 32,   lh: 1.4,    gap: 29.66, enabled: 1 },
-				{ key: 'lunch_price', label: 'Cena lunchu',         kind: 'text',  text: '43 ZŁ',                     font: 'Poppins-Black',           size: 25,   lh: 1.4,    gap: -0.69, enabled: 1, price: 1, short: 'lunch' },
-				{ key: 'weight',      label: 'Gramatura',           kind: 'field', field: 'weight',                    font: 'BarlowCondensed-Regular', size: 12,   lh: 1.2,    gap: -3.44, enabled: 1 },
-				{ key: 'lunch',       label: 'Opis lunchu',         kind: 'field', field: 'lunch',                     font: 'Poppins-ExtraLight',      size: 16.5, lh: 1.3642, gap: 8.38,  enabled: 1 },
-				{ key: 'rec_title',   label: 'Nagłówek „polecamy”', kind: 'text',  text: 'polecamy',                  font: 'Poppins-Black',           size: 24.5, lh: 1.4,    gap: 5.21,  enabled: 1 },
-				{ key: 'rec',         label: 'Polecamy (lista)',    kind: 'field', field: 'rec',                       font: 'Poppins-ExtraLight',      size: 12,   lh: 1.3755, gap: 6.08,  enabled: 1 },
+				{ key: 'soup_title',  label: 'Nagłówek zupy',       kind: 'text',  text: 'zupa\nprzy zakupie lunchu', font: 'Poppins-Black',           size: 21,   lh: 1.3934, gap: 0,     enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
+				{ key: 'soup_price',  label: 'Cena zupy',           kind: 'text',  text: '14 zł',                     font: 'Poppins-Black',           size: 21,   lh: 1.3934, gap: 0,     enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0, price: 1, short: 'zupa' },
+				{ key: 'soup',        label: 'Zupa dnia',           kind: 'field', field: 'soup',                      font: 'Poppins-ExtraLight',      size: 19,   lh: 1.3821, gap: -0.05, enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
+				{ key: 'lunch_title', label: 'Nagłówek lunchu',     kind: 'text',  text: 'lunch dnia',                font: 'Poppins-Black',           size: 32,   lh: 1.4,    gap: 29.66, enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
+				{ key: 'lunch_price', label: 'Cena lunchu',         kind: 'text',  text: '43 ZŁ',                     font: 'Poppins-Black',           size: 25,   lh: 1.4,    gap: -0.69, enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0, price: 1, short: 'lunch' },
+				{ key: 'weight',      label: 'Gramatura',           kind: 'field', field: 'weight',                    font: 'BarlowCondensed-Regular', size: 12,   lh: 1.2,    gap: -3.44, enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
+				{ key: 'lunch',       label: 'Opis lunchu',         kind: 'field', field: 'lunch',                     font: 'Poppins-ExtraLight',      size: 16.5, lh: 1.3642, gap: 8.38,  enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
+				{ key: 'rec_title',   label: 'Nagłówek „polecamy”', kind: 'text',  text: 'polecamy',                  font: 'Poppins-Black',           size: 24.5, lh: 1.4,    gap: 5.21,  enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
+				{ key: 'rec',         label: 'Polecamy (lista)',    kind: 'field', field: 'rec',                       font: 'Poppins-ExtraLight',      size: 12,   lh: 1.3755, gap: 6.08,  enabled: 1, align: 'center', dx: 0, pos: 'flow', top: 0 },
 			],
 		};
 	}
@@ -135,7 +146,7 @@
 			d.blocks.forEach( function ( b ) {
 				var s = byKey[ b.key ];
 				if ( ! s ) return;
-				[ 'text', 'font', 'size', 'lh', 'gap', 'enabled' ].forEach( function ( p ) {
+				[ 'text', 'font', 'size', 'lh', 'gap', 'enabled', 'align', 'dx', 'pos', 'top' ].forEach( function ( p ) {
 					if ( s[ p ] !== undefined && s[ p ] !== null ) b[ p ] = s[ p ];
 				} );
 			} );
@@ -191,7 +202,9 @@
 
 		function flow( scale ) {
 			var lines = [];
-			var lastBottom = null;
+			var lastBottom = null;   // dół ostatniego bloku w przepływie
+			var prevTop = null;      // góra poprzedniego bloku (dla pos 'line')
+			var maxBottom = null;    // najniższy punkt treści (kontrola przepełnienia)
 			layout.blocks.forEach( function ( b ) {
 				if ( ! +b.enabled ) return;
 				var text = b.kind === 'field' ? ( draft && draft[ b.field ] ) || '' : ( b.text || '' );
@@ -199,14 +212,28 @@
 				var step = size * num( b.lh, 1.3 );
 				var wrapped = wrap( text, function ( t ) { return measure( b.font, size, t ); }, maxW, +page.keep_short_words );
 				if ( ! wrapped.length ) return; // pusty blok nie zajmuje miejsca
-				// top = górna krawędź pudełka linii; kolejny blok pod dolną krawędzią poprzedniego + odstęp
-				var top = lastBottom === null ? num( page.content_top, 179.04 ) : lastBottom + num( b.gap, 0 ) * scale;
+				var pos = b.pos === 'fixed' || b.pos === 'line' ? b.pos : 'flow';
+				var gap = num( b.gap, 0 ) * scale;
+				var top;
+				if ( pos === 'fixed' ) {
+					top = num( b.top, 0 );
+				} else if ( pos === 'line' && prevTop !== null ) {
+					top = prevTop + gap;
+				} else {
+					// górna krawędź pudełka linii; kolejny blok pod dolną krawędzią poprzedniego + odstęp
+					top = lastBottom === null ? num( page.content_top, 179.04 ) : lastBottom + gap;
+				}
 				wrapped.forEach( function ( l, i ) {
-					if ( l !== '' ) lines.push( { font: b.font, size: size, step: step, text: l, top: top + i * step, key: b.key } );
+					if ( l !== '' ) lines.push( { font: b.font, size: size, step: step, text: l, top: top + i * step, key: b.key, align: b.align || 'center', dx: num( b.dx, 0 ) } );
 				} );
-				lastBottom = top + wrapped.length * step;
+				var bottom = top + wrapped.length * step;
+				if ( pos !== 'fixed' ) {
+					lastBottom = ( pos === 'line' && lastBottom !== null ) ? Math.max( lastBottom, bottom ) : bottom;
+				}
+				prevTop = top;
+				maxBottom = maxBottom === null ? bottom : Math.max( maxBottom, bottom );
 			} );
-			return { lines: lines, bottom: lastBottom === null ? num( page.content_top, 0 ) : lastBottom };
+			return { lines: lines, bottom: maxBottom === null ? num( page.content_top, 0 ) : maxBottom };
 		}
 
 		var limit = num( page.content_bottom, 765 );
@@ -277,11 +304,14 @@
 		var rgb = lib.rgb( color[ 0 ], color[ 1 ], color[ 2 ] );
 		var centers = [ num( p.center_left, 150.1 ), num( p.center_right, 446.9 ) ];
 
-		function drawCentered( key, size, text, top, step ) {
+		var colW = num( p.max_width, 250 );
+		function drawCentered( key, size, text, top, step, align, dx ) {
 			var w = measure( key, size, text );
 			var y = baseline( key, size, top, step );
+			dx = num( dx, 0 );
 			centers.forEach( function ( cx ) {
-				page.drawText( text, { x: cx - w / 2, y: y, size: size, font: fonts[ key ], color: rgb } );
+				var x = align === 'left' ? cx - colW / 2 : ( align === 'right' ? cx + colW / 2 - w : cx - w / 2 );
+				page.drawText( text, { x: x + dx, y: y, size: size, font: fonts[ key ], color: rgb } );
 			} );
 		}
 
@@ -301,7 +331,7 @@
 
 		// Treść.
 		var res = compute( layout, draft, measure );
-		res.lines.forEach( function ( l ) { drawCentered( l.font, l.size, l.text, l.top, l.step ); } );
+		res.lines.forEach( function ( l ) { drawCentered( l.font, l.size, l.text, l.top, l.step, l.align, l.dx ); } );
 
 		// Stopka.
 		var ft = layout.footer;
