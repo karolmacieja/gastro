@@ -68,6 +68,15 @@ class GFX_Auth {
 			return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Podaj login i hasło.', 'gastroflowx-hub' ) ), 400 );
 		}
 
+		// Konta z 2FA w Wordfence — logowanie dwuetapowe (hasło, potem kod).
+		$candidate = get_user_by( 'login', $login );
+		if ( ! $candidate && is_email( $login ) ) {
+			$candidate = get_user_by( 'email', $login );
+		}
+		if ( class_exists( 'GFX_Two_Factor' ) && GFX_Two_Factor::user_has_2fa( $candidate ) ) {
+			return $this->login_two_factor( $candidate, $login, $password, $remember, (string) $req->get_param( 'code' ) );
+		}
+
 		$user = wp_signon(
 			array(
 				'user_login'    => $login,
@@ -82,6 +91,14 @@ class GFX_Auth {
 				// Konto zablokowane — pokazujemy komunikat z ustawień zamiast „złe hasło”.
 				return new WP_REST_Response( array( 'success' => false, 'blocked' => true, 'message' => $user->get_error_message() ), 403 );
 			}
+			if ( class_exists( 'GFX_Two_Factor' ) && GFX_Two_Factor::is_code_required_error( $user ) ) {
+				// Wordfence wymaga kodu, choć nie wykryliśmy 2FA wcześniej — poproś o kod.
+				return $this->ask_for_code();
+			}
+			if ( class_exists( 'GFX_Two_Factor' ) && GFX_Two_Factor::is_wfls_error( $user ) ) {
+				// Inne komunikaty Wordfence (np. wymagane włączenie 2FA, weryfikacja e-mailem).
+				return new WP_REST_Response( array( 'success' => false, 'message' => GFX_Two_Factor::plain_message( $user ) ), 403 );
+			}
 			return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Nieprawidłowy login lub hasło.', 'gastroflowx-hub' ) ), 401 );
 		}
 
@@ -94,6 +111,104 @@ class GFX_Auth {
 			),
 			200
 		);
+	}
+
+	private function ask_for_code( $message = '', $status = 200 ) {
+		return new WP_REST_Response(
+			array(
+				'success'   => false,
+				'twoFactor' => true,
+				'message'   => $message ? $message : __( 'Wpisz kod z aplikacji uwierzytelniającej (6 cyfr).', 'gastroflowx-hub' ),
+			),
+			$status
+		);
+	}
+
+	/**
+	 * Logowanie konta z 2FA w Wordfence.
+	 * Krok 1 (bez kodu): sprawdzenie hasła przez pełny łańcuch „authenticate”
+	 * (blokady Wordfence, blokada konta w hubie) — przy poprawnym haśle prośba o kod.
+	 * Krok 2 (z kodem): ponowne uwierzytelnienie z kodem w polu `wfls-token`
+	 * (weryfikuje Wordfence), a jeśli Wordfence nie egzekwował kodu w kroku 1 —
+	 * weryfikacja kodu funkcją Wordfence. Dopiero potem ciasteczko logowania.
+	 */
+	private function login_two_factor( WP_User $candidate, $login, $password, $remember, $code ) {
+		$code = preg_replace( '/[\s-]+/', '', $code );
+		$key  = GFX_Two_Factor::state_key( $candidate );
+		$fail = function ( $err ) {
+			if ( 'gfx_account_blocked' === $err->get_error_code() ) {
+				return new WP_REST_Response( array( 'success' => false, 'blocked' => true, 'message' => $err->get_error_message() ), 403 );
+			}
+			if ( GFX_Two_Factor::is_wfls_error( $err ) && ! GFX_Two_Factor::is_code_required_error( $err ) ) {
+				return new WP_REST_Response( array( 'success' => false, 'twoFactor' => true, 'message' => GFX_Two_Factor::plain_message( $err ) ), 401 );
+			}
+			return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Nieprawidłowy login lub hasło.', 'gastroflowx-hub' ) ), 401 );
+		};
+
+		// Limit prób kodu: 5 błędnych → 15 minut przerwy dla tego konta.
+		if ( get_transient( $key . '_lock' ) ) {
+			return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Zbyt wiele błędnych kodów. Spróbuj ponownie za 15 minut.', 'gastroflowx-hub' ) ), 429 );
+		}
+		$bad_code = function () use ( $key ) {
+			$n = (int) get_transient( $key . '_fails' ) + 1;
+			if ( $n >= 5 ) {
+				delete_transient( $key );
+				delete_transient( $key . '_fails' );
+				set_transient( $key . '_lock', 1, 15 * MINUTE_IN_SECONDS );
+				return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Zbyt wiele błędnych kodów. Spróbuj ponownie za 15 minut.', 'gastroflowx-hub' ) ), 429 );
+			}
+			set_transient( $key . '_fails', $n, 15 * MINUTE_IN_SECONDS );
+			return $this->ask_for_code( __( 'Nieprawidłowy kod. Spróbuj ponownie.', 'gastroflowx-hub' ), 401 );
+		};
+
+		$mode = get_transient( $key );
+		if ( '' === $code || ! $mode ) {
+			GFX_Two_Factor::set_request_token( null );
+			$res = wp_authenticate( $login, $password );
+			if ( is_wp_error( $res ) && ! GFX_Two_Factor::is_code_required_error( $res ) ) {
+				return $fail( $res );
+			}
+			// Hasło sprawdzamy też sami — prośba o kod tylko po poprawnym haśle.
+			if ( ! wp_check_password( $password, $candidate->user_pass, $candidate->ID ) ) {
+				return $fail( new WP_Error( 'incorrect_password', '' ) );
+			}
+			// 'wfls' = Wordfence sam wymaga i sprawdza kod; 'self' = sprawdzamy funkcją Wordfence.
+			set_transient( $key, is_wp_error( $res ) ? 'wfls' : 'self', 10 * MINUTE_IN_SECONDS );
+			return $this->ask_for_code();
+		}
+
+		if ( 'wfls' === $mode ) {
+			GFX_Two_Factor::set_request_token( $code );
+			$user = wp_authenticate( $login, $password );
+			GFX_Two_Factor::set_request_token( null );
+			if ( is_wp_error( $user ) ) {
+				if ( GFX_Two_Factor::is_wfls_error( $user ) ) {
+					return $bad_code(); // zły kod — komunikat i licznik prób
+				}
+				return $fail( $user );
+			}
+		} else {
+			$user = wp_authenticate( $login, $password );
+			if ( is_wp_error( $user ) ) {
+				return $fail( $user );
+			}
+			$ok = GFX_Two_Factor::validate( $user, $code );
+			if ( null === $ok ) {
+				// Nie da się zweryfikować kodu — nie wpuszczamy bez 2FA.
+				return new WP_REST_Response( array( 'success' => false, 'message' => __( 'Nie można zweryfikować kodu w panelu. Zaloguj się przez stronę logowania WordPress (wp-login.php) albo skontaktuj się z administratorem.', 'gastroflowx-hub' ) ), 403 );
+			}
+			if ( ! $ok ) {
+				return $bad_code();
+			}
+		}
+
+		delete_transient( $key );
+		delete_transient( $key . '_fails' );
+		wp_set_auth_cookie( $user->ID, $remember, is_ssl() );
+		wp_set_current_user( $user->ID );
+		do_action( 'wp_login', $user->user_login, $user ); // jak wp_signon()
+
+		return new WP_REST_Response( array( 'success' => true, 'redirect' => remove_query_arg( array() ) ), 200 );
 	}
 
 	public function logout( WP_REST_Request $req ) {

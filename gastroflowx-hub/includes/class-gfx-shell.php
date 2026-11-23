@@ -323,6 +323,17 @@ class GFX_Shell {
 							</div>
 						</div>
 
+						<?php // Krok 2 logowania (konta z 2FA w Wordfence) — pokazywany przez shell.js. ?>
+						<div class="gfx-field gfx-login-2fa" id="gfx-login-2fa" style="display:none;">
+							<label for="gfx-login-code"><?php esc_html_e( 'Kod uwierzytelniający', 'gastroflowx-hub' ); ?></label>
+							<div class="gfx-input-wrap">
+								<i class="fa-solid fa-shield-halved"></i>
+								<input type="text" id="gfx-login-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="20" placeholder="<?php esc_attr_e( ' ', 'gastroflowx-hub' ); ?>" />
+							</div>
+							<p class="gfx-login-2fa-hint"><?php esc_html_e( 'Otwórz aplikację uwierzytelniającą (np. Google Authenticator) i wpisz 6-cyfrowy kod dla tego konta.', 'gastroflowx-hub' ); ?></p>
+							<button type="button" class="gfx-login-back" id="gfx-login-back"><?php esc_html_e( '← Zmień login lub hasło', 'gastroflowx-hub' ); ?></button>
+						</div>
+
 						<label class="gfx-remember">
 							<input type="checkbox" name="remember" id="gfx-login-remember" checked />
 							<span><?php esc_html_e( 'Zapamiętaj mnie', 'gastroflowx-hub' ); ?></span>

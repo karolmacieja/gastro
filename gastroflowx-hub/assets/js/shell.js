@@ -11,6 +11,31 @@
 		var form = document.getElementById('gfx-login-form');
 		if (!form) return;
 
+		// Krok 2 (2FA Wordfence): pola loginu i hasła chowamy, pokazujemy pole kodu.
+		var twoFa = document.getElementById('gfx-login-2fa');
+		var codeInput = document.getElementById('gfx-login-code');
+		var credFields = [document.getElementById('gfx-login-username'), document.getElementById('gfx-login-password')]
+			.map(function (el) { return el ? el.closest('.gfx-field') : null; });
+		var step2 = false;
+		function setStep2(on) {
+			step2 = on;
+			if (!twoFa) return;
+			twoFa.style.display = on ? '' : 'none';
+			credFields.forEach(function (f) { if (f) f.style.display = on ? 'none' : ''; });
+			if (codeInput) {
+				codeInput.required = on;
+				if (!on) codeInput.value = '';
+			}
+			var b = document.getElementById('gfx-login-submit');
+			b.textContent = on ? 'Potwierdź kod' : 'Zaloguj się';
+			if (on && codeInput) setTimeout(function () { codeInput.focus(); }, 50);
+		}
+		var back = document.getElementById('gfx-login-back');
+		if (back) back.addEventListener('click', function () {
+			setStep2(false);
+			document.getElementById('gfx-login-error').style.display = 'none';
+		});
+
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			var btn = document.getElementById('gfx-login-submit');
@@ -22,7 +47,8 @@
 			var payload = {
 				login: document.getElementById('gfx-login-username').value,
 				password: document.getElementById('gfx-login-password').value,
-				remember: document.getElementById('gfx-login-remember').checked
+				remember: document.getElementById('gfx-login-remember').checked,
+				code: step2 && codeInput ? codeInput.value : ''
 			};
 
 			fetch(GFX_DATA.restUrl + '/login', {
@@ -34,7 +60,19 @@
 				.then(function (res) {
 					if (res.ok && res.data.success) {
 						window.location.reload();
+					} else if (res.data && res.data.twoFactor) {
+						var first = !step2;
+						setStep2(true);
+						btn.disabled = false;
+						btn.textContent = 'Potwierdź kod';
+						if (!first || !res.ok) {
+							// Zły kod / komunikat Wordfence — pokaż; przy pierwszym wejściu w krok 2 tylko podpowiedź pod polem.
+							err.textContent = res.data.message || GFX_DATA.i18n.loginError;
+							err.style.display = 'block';
+						}
+						if (codeInput) { codeInput.value = ''; codeInput.focus(); }
 					} else {
+						if (step2 && !(res.data && res.data.blocked)) setStep2(false);
 						showLoginError(res.data && res.data.message ? res.data.message : GFX_DATA.i18n.loginError);
 					}
 				})
@@ -46,7 +84,7 @@
 				err.textContent = msg;
 				err.style.display = 'block';
 				btn.disabled = false;
-				btn.textContent = 'Zaloguj się';
+				btn.textContent = step2 ? 'Potwierdź kod' : 'Zaloguj się';
 			}
 		});
 	}
