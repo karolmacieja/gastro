@@ -259,7 +259,7 @@ function snspa_js_body() {
                   pushM: (new Date().getMonth()+1), pushY: new Date().getFullYear(), pushTemplates: {}, pushMsg: {},
                   onesignalSettings: null, percentOverrides: null,
                   srM: (new Date().getMonth()+1), srY: new Date().getFullYear(), srDept: 'kuchnia', srData: null,
-                  quick: null, quickDate: null, quickMsg: null };
+                  quick: null, quickDate: null, quickMsg: null, quickWeek: null, qSel: null, qReset: {}, qDirty: false };
 
     function fmt(n){ n = parseFloat(n||0); return n.toLocaleString('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2}); }
     function fmtDate(iso){ var p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
@@ -1330,12 +1330,23 @@ function snspa_js_body() {
      * SZYBKIE NAPIWKI — administracja (osoby z PIN-em, obsada dnia).
      * --------------------------------------------------------- */
     function loadQuick(date){
-        api('/quick/admin' + (date ? '?date=' + date : '')).then(function(d){ state.quick = d; state.quickDate = d.date; render(); })
+        var qs = date ? '?date=' + date : (state.quickWeek ? '?week=' + state.quickWeek : '');
+        api('/quick/admin' + qs).then(function(d){ setQuick(d); render(); })
             .catch(function(e){ state.quickMsg = { text: e.message, err: true }; render(); });
+    }
+    // Zaznaczenia tygodnia: ręczna obsada dnia, a bez niej — osoby z Grafiku.
+    function setQuick(d){
+        state.quick = d; state.quickDate = d.date;
+        state.quickWeek = d.week ? d.week.start : null;
+        state.qSel = {}; state.qReset = {}; state.qDirty = false;
+        (d.week ? d.week.days : []).forEach(function(day){
+            var m = {}; (day.manual ? day.roster : day.schedule).forEach(function(id){ m[id] = true; });
+            state.qSel[day.date] = m;
+        });
     }
     function quickSave(body, okText){
         state.quickMsg = null;
-        api('/quick/admin', 'POST', body).then(function(d){ state.quick = d; state.quickDate = d.date; state.quickMsg = { text: okText }; render(); })
+        api('/quick/admin', 'POST', body).then(function(d){ setQuick(d); state.quickMsg = { text: okText }; render(); })
             .catch(function(e){ state.quickMsg = { text: e.message, err: true }; render(); });
     }
     function renderQuickAdmin(){
@@ -1363,25 +1374,59 @@ function snspa_js_body() {
         return html;
     }
 
-    // Zakładka „Obsada dnia”: kelnerzy podpowiadani w szybkich napiwkach na wybrany dzień.
+    // Zakładka „Obsada dnia”: tydzień (pon–niedz), kelnerzy × dni, zaznaczenia na każdy dzień.
+    var Q_DOW = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'niedz'];
+    function qShort(iso){ var p = iso.split('-'); return p[2] + '.' + p[1]; }
+    function qShift(iso, days){ var p = iso.split('-'); var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + days)); return d.toISOString().slice(0, 10); }
+    function qSameAsSchedule(day){
+        var sel = state.qSel[day.date] || {}, ids = Object.keys(sel).filter(function(k){ return sel[k]; });
+        return ids.length === day.schedule.length && day.schedule.every(function(id){ return sel[id]; });
+    }
     function renderQuickRoster(){
         var q = state.quick;
-        var html = '<div class="snspa-card role-summary snspa-settings" style="grid-column:1/-1;"><h3><i class="fas fa-user-check"></i> Obsada dnia — szybkie napiwki</h3>';
-        if (!q){ return html + '<div class="snspa-loading">Ładowanie…</div></div>'; }
+        var html = '<div class="snspa-card role-summary snspa-settings" style="grid-column:1/-1;"><h3><i class="fas fa-user-check"></i> Obsada — szybkie napiwki</h3>';
+        if (!q || !q.week){ return html + '<div class="snspa-loading">Ładowanie…</div></div>'; }
+        var w = q.week;
         if (state.quickMsg) html += '<div class="snspa-msg' + (state.quickMsg.err ? ' err' : '') + '">' + esc(state.quickMsg.text) + '</div>';
-        html += '<div class="snspa-muted" style="margin-bottom:8px;">Bez obsady formularz podpowiada kelnerów z Grafiku na ten dzień; osoba wprowadzająca i tak może dodać lub usunąć kelnera.</div>';
-        html += '<label>Dzień <input type="date" id="snspa-q-date" value="' + esc(q.date) + '"></label>';
-        var sched = {}; q.schedule.forEach(function(id){ sched[id] = 1; });
-        var sel = {}; (q.roster.length ? q.roster : q.schedule).forEach(function(id){ sel[id] = 1; });
-        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin:10px 0;">';
-        q.waiters.forEach(function(w){
-            html += '<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" data-q-w="' + w.id + '"' + (sel[w.id] ? ' checked' : '') + '> ' + esc(w.name) + (sched[w.id] ? ' <span class="snspa-tag">grafik</span>' : '') + '</label>';
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:4px 0 12px;">' +
+            '<button class="snspa-dept-btn" type="button" data-q-week="' + qShift(w.start, -7) + '"><i class="fas fa-chevron-left"></i> Poprzedni</button>' +
+            '<b style="font-size:16px;">' + fmtDate(w.start) + ' – ' + fmtDate(w.end) + '</b>' +
+            '<span style="display:flex;gap:6px;"><button class="snspa-dept-btn" type="button" data-q-week="today">Ten tydzień</button>' +
+            '<button class="snspa-dept-btn" type="button" data-q-week="' + qShift(w.start, 7) + '">Następny <i class="fas fa-chevron-right"></i></button></span></div>';
+        if (!w.waiters.length){ return html + '<div class="snspa-muted">Brak kelnerów.</div></div>'; }
+        html += '<div class="snspa-table-wrap"><table class="snspa-table" style="min-width:640px;"><thead><tr><th style="text-align:left;">Kelner</th>';
+        w.days.forEach(function(day, i){
+            var badge = state.qReset[day.date] ? 'grafik' : ((day.manual || !qSameAsSchedule(day)) ? 'ręcznie' : 'grafik');
+            html += '<th style="text-align:center;">' + Q_DOW[i] + '<br>' + qShort(day.date) +
+                '<br><span class="snspa-tag" style="font-size:9px;">' + badge + '</span>' +
+                (day.manual && !state.qReset[day.date] ? '<br><button type="button" class="snspa-dept-btn" style="font-size:10px;padding:2px 6px;margin-top:3px;" data-q-reset="' + day.date + '" title="Usuń ręczną obsadę tego dnia — wróć do Grafiku">↺ Grafik</button>' : '') + '</th>';
         });
-        html += '</div><div class="snspa-muted" style="margin-bottom:8px;">' + (q.roster.length ? 'Obsada ustawiona ręcznie.' : (q.schedule.length ? 'Zaznaczeni wg Grafiku (nie zapisano obsady).' : 'Brak zmian w Grafiku na ten dzień.')) + '</div>';
-        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="snspa-save" style="width:auto;margin:0;" type="button" id="snspa-q-roster">Zapisz obsadę</button>' +
-            (q.roster.length ? '<button class="snspa-save secondary" style="width:auto;margin:0;" type="button" id="snspa-q-roster-clear">Wróć do Grafiku</button>' : '') + '</div>';
+        html += '</tr></thead><tbody>';
+        w.waiters.forEach(function(p){
+            html += '<tr><td style="text-align:left;"><b>' + esc(p.name) + '</b></td>';
+            w.days.forEach(function(day){
+                var inSched = day.schedule.indexOf(p.id) > -1, on = !!(state.qSel[day.date] || {})[p.id];
+                html += '<td style="text-align:center;' + (inSched ? 'background:var(--rs-accent-soft,#eff6ff);' : '') + '">' +
+                    '<input type="checkbox" style="width:20px;height:20px;" data-q-cell="' + day.date + '|' + p.id + '"' + (on ? ' checked' : '') + ' title="' + esc(p.name) + ' — ' + qShort(day.date) + (inSched ? ' (w Grafiku)' : '') + '"></td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody><tfoot><tr><td style="text-align:left;">Osób</td>';
+        w.days.forEach(function(day){ var sel = state.qSel[day.date] || {}; html += '<td style="text-align:center;">' + Object.keys(sel).filter(function(k){ return sel[k]; }).length + '</td>'; });
+        html += '</tr></tfoot></table></div>';
+        html += '<div class="snspa-muted" style="margin:8px 0;">Niebieskie pole = osoba ma zmianę w Grafiku. Dzień bez ręcznej obsady podpowiada osoby z Grafiku; po zmianie zaznaczeń dzień dostaje obsadę „ręcznie”. Osoba wprowadzająca napiwki i tak może dodać lub usunąć kelnera w formularzu.</div>';
+        html += '<button class="snspa-save" type="button" id="snspa-q-week-save"' + (state.qDirty ? '' : ' disabled') + '>' + (state.qDirty ? 'Zapisz tydzień' : 'Brak zmian do zapisania') + '</button>';
         html += '</div>';
         return html;
+    }
+    function quickSaveWeek(){
+        var w = state.quick.week, days = {};
+        w.days.forEach(function(day){
+            var sel = state.qSel[day.date] || {}, ids = Object.keys(sel).filter(function(k){ return sel[k]; }).map(Number);
+            if (state.qReset[day.date]) days[day.date] = [];
+            else if (day.manual || !qSameAsSchedule(day)) days[day.date] = ids.length ? ids : [];
+        });
+        quickSave({ action: 'roster_week', days: days }, 'Obsada tygodnia zapisana.');
     }
 
     function loadDay(){
@@ -1536,15 +1581,22 @@ function snspa_js_body() {
             if (!confirm('Odebrać tej osobie dostęp do szybkich napiwków?')) return;
             quickSave({ action: 'remove', user_id: parseInt(el.dataset.qRemove, 10) }, 'Dostęp odebrany.');
         }); });
-        var qDate = root.querySelector('#snspa-q-date');
-        if (qDate) qDate.addEventListener('change', function(){ state.quickMsg = null; loadQuick(qDate.value); });
-        var qRoster = root.querySelector('#snspa-q-roster');
-        if (qRoster) qRoster.addEventListener('click', function(){
-            var ids = []; root.querySelectorAll('[data-q-w]').forEach(function(c){ if (c.checked) ids.push(parseInt(c.dataset.qW, 10)); });
-            quickSave({ action: 'roster', date: root.querySelector('#snspa-q-date').value, ids: ids }, ids.length ? 'Obsada zapisana.' : 'Obsada usunięta — formularz podpowie kelnerów z Grafiku.');
-        });
-        var qClear = root.querySelector('#snspa-q-roster-clear');
-        if (qClear) qClear.addEventListener('click', function(){ quickSave({ action: 'roster', date: root.querySelector('#snspa-q-date').value, ids: [] }, 'Obsada usunięta — formularz podpowie kelnerów z Grafiku.'); });
+        root.querySelectorAll('[data-q-week]').forEach(function(el){ el.addEventListener('click', function(){
+            if (state.qDirty && !confirm('Masz niezapisane zmiany w obsadzie. Porzucić je?')) return;
+            state.quickMsg = null; state.quickWeek = el.dataset.qWeek === 'today' ? null : el.dataset.qWeek; state.quick = null; render(); loadQuick();
+        }); });
+        root.querySelectorAll('[data-q-cell]').forEach(function(el){ el.addEventListener('change', function(){
+            var parts = el.dataset.qCell.split('|');
+            (state.qSel[parts[0]] = state.qSel[parts[0]] || {})[parts[1]] = el.checked;
+            delete state.qReset[parts[0]]; state.qDirty = true; state.quickMsg = null; render();
+        }); });
+        root.querySelectorAll('[data-q-reset]').forEach(function(el){ el.addEventListener('click', function(){
+            var d = el.dataset.qReset, day = state.quick.week.days.filter(function(x){ return x.date === d; })[0];
+            var m = {}; day.schedule.forEach(function(id){ m[id] = true; });
+            state.qSel[d] = m; state.qReset[d] = true; state.qDirty = true; render();
+        }); });
+        var qWeekSave = root.querySelector('#snspa-q-week-save');
+        if (qWeekSave) qWeekSave.addEventListener('click', quickSaveWeek);
         if (state.tab === 'waiterSettlement' && state.wsData) updateWsDiffs();
 
         var dateInput = root.querySelector('#snspa-date');

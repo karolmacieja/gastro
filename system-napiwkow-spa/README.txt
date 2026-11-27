@@ -501,3 +501,10 @@ Dni wpisane przed aktualizacją przez panel kierownika: „autor nieznany”.
 == 1.3.2 — osobna zakładka „Obsada dnia” ==
 Obsada kelnerów na dany dzień (dla szybkich napiwków) ma własną zakładkę: Dzień → Obsada dnia
 (tylko administrator strony). W Ustawieniach zostało nadawanie dostępu (PIN-y) i adres strony.
+
+== 1.3.3 — obsada tygodniowa ==
+Zakładka Dzień → Obsada dnia pokazuje cały tydzień (poniedziałek–niedziela, „od – do”),
+z przyciskami Poprzedni / Ten tydzień / Następny. Wiersze = kelnerzy, kolumny = dni;
+zaznaczenie na każdy dzień osobno. Niebieskie pole = zmiana w Grafiku. Dzień bez ręcznej
+obsady podpowiada osoby z Grafiku („grafik”), po zmianie zaznaczeń — „ręcznie”;
+„↺ Grafik” usuwa ręczną obsadę dnia. „Zapisz tydzień” zapisuje wszystkie dni naraz.

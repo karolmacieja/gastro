@@ -288,7 +288,8 @@ function snspa_quick_rest_save_day(WP_REST_Request $req) {
     $roster = is_array($roster) ? $roster : [];
     $listed = array_values(array_unique(array_filter(array_map(function ($r) use ($all) { $id = intval($r['id'] ?? 0); return isset($all[$id]) ? $id : 0; }, $rows))));
     if ($listed) $roster[$date] = $listed;
-    $roster = array_slice($roster, -60, null, true); // ostatnie 60 dni
+    ksort($roster);
+    $roster = array_slice($roster, -90, null, true); // ostatnie 90 dni (z planem na przyszłe tygodnie)
     update_option(SNSPA_QUICK_ROSTER, $roster, false);
 
     snspa_entry_log_record($date, $s['user'], 'quick');
@@ -300,6 +301,33 @@ function snspa_quick_rest_save_day(WP_REST_Request $req) {
 }
 
 /* --- administracja: osoby z PIN-em i obsada dnia --- */
+
+/** Poniedziałek tygodnia, w którym leży $date (Y-m-d). */
+function snspa_quick_week_start($date) {
+    $ts = strtotime($date . ' 12:00:00');
+    $dow = (int) gmdate('N', $ts); // 1 = poniedziałek
+    return gmdate('Y-m-d', $ts - ($dow - 1) * DAY_IN_SECONDS);
+}
+
+/** Obsada całego tygodnia: dni z ręczną obsadą / Grafikiem + kelnerzy aktywni w tym tygodniu. */
+function snspa_quick_week_payload($week_start) {
+    $roster = get_option(SNSPA_QUICK_ROSTER, []);
+    $days = [];
+    $waiters = [];
+    for ($i = 0; $i < 7; $i++) {
+        $d = gmdate('Y-m-d', strtotime($week_start . ' 12:00:00') + $i * DAY_IN_SECONDS);
+        $manual = array_map('intval', (array) ($roster[$d] ?? []));
+        $days[] = ['date' => $d, 'roster' => $manual, 'schedule' => snspa_quick_schedule_ids($d), 'manual' => (bool) $manual];
+        foreach (snspa_quick_all_waiters($d) as $id => $name) $waiters[$id] = $name;
+    }
+    asort($waiters, SORT_LOCALE_STRING);
+    return [
+        'start' => $week_start,
+        'end' => $days[6]['date'],
+        'days' => $days,
+        'waiters' => array_map(function ($id, $name) { return ['id' => $id, 'name' => $name]; }, array_keys($waiters), array_values($waiters)),
+    ];
+}
 
 function snspa_quick_rest_admin_get(WP_REST_Request $req) {
     $date = sanitize_text_field((string) $req->get_param('date')) ?: snspa_quick_today();
@@ -322,6 +350,7 @@ function snspa_quick_rest_admin_get(WP_REST_Request $req) {
         'schedule' => snspa_quick_schedule_ids($date),
         'waiters' => array_map(function ($id, $name) { return ['id' => $id, 'name' => $name]; }, array_keys(snspa_quick_all_waiters($date)), array_values(snspa_quick_all_waiters($date))),
         'url' => snspa_quick_url(),
+        'week' => snspa_quick_week_payload(snspa_quick_week_start($req->get_param('week') && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $req->get_param('week')) ? (string) $req->get_param('week') : $date)),
     ];
 }
 
@@ -354,8 +383,23 @@ function snspa_quick_rest_admin_save(WP_REST_Request $req) {
         $roster = is_array($roster) ? $roster : [];
         if ($ids) $roster[$date] = $ids; else unset($roster[$date]);
         ksort($roster);
-        update_option(SNSPA_QUICK_ROSTER, array_slice($roster, -60, null, true), false);
+        update_option(SNSPA_QUICK_ROSTER, array_slice($roster, -90, null, true), false);
         $req->set_param('date', $date);
+    } elseif ($action === 'roster_week') {
+        // { days: { 'Y-m-d': [ids] | null } } — null/pusta lista = dzień wraca do Grafiku.
+        $roster = get_option(SNSPA_QUICK_ROSTER, []);
+        $roster = is_array($roster) ? $roster : [];
+        $first = null;
+        foreach ((array) ($b['days'] ?? []) as $date => $ids) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $date)) continue;
+            $first = $first ?: $date;
+            $all = snspa_quick_all_waiters($date);
+            $ids = array_values(array_unique(array_filter(array_map('intval', (array) $ids), function ($id) use ($all) { return isset($all[$id]); })));
+            if ($ids) $roster[$date] = $ids; else unset($roster[$date]);
+        }
+        ksort($roster);
+        update_option(SNSPA_QUICK_ROSTER, array_slice($roster, -90, null, true), false);
+        if ($first) $req->set_param('week', $first);
     } else {
         return new WP_Error('bad_action', 'Nieznana operacja.', ['status' => 400]);
     }
