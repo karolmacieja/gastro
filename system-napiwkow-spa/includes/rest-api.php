@@ -381,6 +381,11 @@ function snspa_get_day_data($date) {
             $rows[] = ['id' => $w->ID, 'name' => $w->display_name, 'card' => $c, 'service' => $s];
             $sumCard += $c; $sumService += $s;
         }
+        if (function_exists('snspa_sort_waiters')) {
+            // Kolejność kelnerów z ustawienia (zakładka Obsada dnia).
+            $pos = array_flip(array_keys(snspa_sort_waiters(array_column($rows, 'name', 'id'))));
+            usort($rows, function ($a, $b) use ($pos) { return $pos[$a['id']] <=> $pos[$b['id']]; });
+        }
         $out['manager'] = ['waiters' => $rows, 'sumCard' => $sumCard, 'sumService' => $sumService];
         // Kto wpisał karty/serwis tego dnia (szybkie napiwki albo panel kierownika).
         $out['manager']['enteredBy'] = function_exists('snspa_entry_log_get') ? snspa_entry_log_get($date) : null;

@@ -26,6 +26,7 @@ if (!defined('ABSPATH')) exit;
 const SNSPA_QUICK_PEOPLE = 'snspa_quick_people';  // [ user_id => [ 'pin' => hash, 'set' => Y-m-d H:i ] ]
 const SNSPA_QUICK_ROSTER = 'snspa_quick_roster';  // [ Y-m-d => [ waiter_id, ... ] ]
 const SNSPA_QUICK_LOG    = 'snspa_quick_log';     // [ Y-m-d => [ 'by' => user_id, 'at' => Y-m-d H:i:s ] ]
+const SNSPA_WAITER_ORDER = 'snspa_waiter_order';  // [ waiter_id, ... ] — kolejność wyświetlania kelnerów
 
 /* ---------------------------------------------------------
  * Dane pomocnicze
@@ -40,11 +41,39 @@ function snspa_quick_people() {
     return is_array($p) ? $p : [];
 }
 
-/** Kelnerzy aktywni w danym dniu: [ id => nazwa ] (alfabetycznie). */
+/**
+ * Kolejność kelnerów ustawiona przez administratora (zakładka Obsada dnia).
+ * Kelnerzy spoza listy (np. nowi) — na końcu, alfabetycznie.
+ * @param array $map [ id => nazwa ]
+ * @return array [ id => nazwa ] w ustalonej kolejności
+ */
+function snspa_sort_waiters(array $map) {
+    $order = get_option(SNSPA_WAITER_ORDER, []);
+    $pos = is_array($order) ? array_flip(array_map('intval', $order)) : [];
+    $ids = array_keys($map);
+    usort($ids, function ($a, $b) use ($pos, $map) {
+        $pa = $pos[$a] ?? PHP_INT_MAX; $pb = $pos[$b] ?? PHP_INT_MAX;
+        return $pa === $pb ? strcoll((string) $map[$a], (string) $map[$b]) : ($pa < $pb ? -1 : 1);
+    });
+    $out = [];
+    foreach ($ids as $id) $out[$id] = $map[$id];
+    return $out;
+}
+
+/** Kelnerzy aktywni w danym dniu: [ id => nazwa ] (w ustalonej kolejności). */
 function snspa_quick_all_waiters($date) {
     $out = [];
     foreach (get_users(['role' => 'kelner', 'orderby' => 'display_name']) as $w) {
         if (snspa_is_user_active_on_date($w->ID, $date)) $out[$w->ID] = $w->display_name;
+    }
+    return snspa_sort_waiters($out);
+}
+
+/** Kelnerzy zatrudnieni dziś — lista do ustawiania kolejności. */
+function snspa_quick_all_kelner() {
+    $out = [];
+    foreach (get_users(['role' => 'kelner', 'orderby' => 'display_name']) as $w) {
+        if (snspa_is_user_active_on_date($w->ID, current_time('Y-m-d'))) $out[$w->ID] = $w->display_name;
     }
     return $out;
 }
@@ -84,7 +113,7 @@ function snspa_quick_roster_for($date) {
     $ids = array_values(array_unique(array_merge($ids, array_map('intval', (array) $with))));
     // Tylko kelnerzy (Grafik zawiera też barmanów i kucharzy).
     $ids = array_values(array_filter($ids, function ($id) use ($all) { return isset($all[$id]); }));
-    usort($ids, function ($a, $b) use ($all) { return strcoll($all[$a], $all[$b]); });
+    $ids = array_values(array_intersect(array_keys($all), $ids)); // kolejność jak w ustawieniu
     return ['ids' => $ids, 'source' => $source];
 }
 
@@ -320,7 +349,7 @@ function snspa_quick_week_payload($week_start) {
         $days[] = ['date' => $d, 'roster' => $manual, 'schedule' => snspa_quick_schedule_ids($d), 'manual' => (bool) $manual];
         foreach (snspa_quick_all_waiters($d) as $id => $name) $waiters[$id] = $name;
     }
-    asort($waiters, SORT_LOCALE_STRING);
+    $waiters = snspa_sort_waiters($waiters);
     return [
         'start' => $week_start,
         'end' => $days[6]['date'],
@@ -350,6 +379,8 @@ function snspa_quick_rest_admin_get(WP_REST_Request $req) {
         'schedule' => snspa_quick_schedule_ids($date),
         'waiters' => array_map(function ($id, $name) { return ['id' => $id, 'name' => $name]; }, array_keys(snspa_quick_all_waiters($date)), array_values(snspa_quick_all_waiters($date))),
         'url' => snspa_quick_url(),
+        'order' => array_map(function ($id, $name) { return ['id' => $id, 'name' => $name]; }, array_keys(snspa_sort_waiters(snspa_quick_all_kelner())), array_values(snspa_sort_waiters(snspa_quick_all_kelner()))),
+        'orderCustom' => (bool) get_option(SNSPA_WAITER_ORDER, []),
         'week' => snspa_quick_week_payload(snspa_quick_week_start($req->get_param('week') && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $req->get_param('week')) ? (string) $req->get_param('week') : $date)),
     ];
 }
@@ -385,6 +416,10 @@ function snspa_quick_rest_admin_save(WP_REST_Request $req) {
         ksort($roster);
         update_option(SNSPA_QUICK_ROSTER, array_slice($roster, -90, null, true), false);
         $req->set_param('date', $date);
+    } elseif ($action === 'order') {
+        // { ids: [ ... ] } — kolejność wyświetlania kelnerów (puste = alfabetycznie)
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($b['ids'] ?? [])))));
+        if ($ids) update_option(SNSPA_WAITER_ORDER, $ids, false); else delete_option(SNSPA_WAITER_ORDER);
     } elseif ($action === 'roster_week') {
         // { days: { 'Y-m-d': [ids] | null } } — null/pusta lista = dzień wraca do Grafiku.
         $roster = get_option(SNSPA_QUICK_ROSTER, []);

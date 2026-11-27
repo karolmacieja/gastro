@@ -508,3 +508,9 @@ z przyciskami Poprzedni / Ten tydzień / Następny. Wiersze = kelnerzy, kolumny 
 zaznaczenie na każdy dzień osobno. Niebieskie pole = zmiana w Grafiku. Dzień bez ręcznej
 obsady podpowiada osoby z Grafiku („grafik”), po zmianie zaznaczeń — „ręcznie”;
 „↺ Grafik” usuwa ręczną obsadę dnia. „Zapisz tydzień” zapisuje wszystkie dni naraz.
+
+== 1.3.4 — kolejność kelnerów ==
+Dzień → Obsada dnia → „Kolejność kelnerów”: strzałkami ustawiasz kolejność wyświetlania,
+„Zapisz kolejność” albo „Alfabetycznie” (powrót do kolejności alfabetycznej). Obowiązuje
+w obsadzie tygodnia, w szybkich napiwkach (lista w formularzu i „Dodaj osobę”) oraz w karcie
+managera w zakładce Dzień. Nowi kelnerzy trafiają na koniec (alfabetycznie).

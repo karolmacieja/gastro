@@ -259,7 +259,7 @@ function snspa_js_body() {
                   pushM: (new Date().getMonth()+1), pushY: new Date().getFullYear(), pushTemplates: {}, pushMsg: {},
                   onesignalSettings: null, percentOverrides: null,
                   srM: (new Date().getMonth()+1), srY: new Date().getFullYear(), srDept: 'kuchnia', srData: null,
-                  quick: null, quickDate: null, quickMsg: null, quickWeek: null, qSel: null, qReset: {}, qDirty: false };
+                  quick: null, quickDate: null, quickMsg: null, quickWeek: null, qSel: null, qReset: {}, qDirty: false, qOrder: null, qOrderDirty: false };
 
     function fmt(n){ n = parseFloat(n||0); return n.toLocaleString('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2}); }
     function fmtDate(iso){ var p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
@@ -1339,6 +1339,7 @@ function snspa_js_body() {
         state.quick = d; state.quickDate = d.date;
         state.quickWeek = d.week ? d.week.start : null;
         state.qSel = {}; state.qReset = {}; state.qDirty = false;
+        state.qOrder = (d.order || []).slice(); state.qOrderDirty = false;
         (d.week ? d.week.days : []).forEach(function(day){
             var m = {}; (day.manual ? day.roster : day.schedule).forEach(function(id){ m[id] = true; });
             state.qSel[day.date] = m;
@@ -1417,7 +1418,23 @@ function snspa_js_body() {
         html += '<div class="snspa-muted" style="margin:8px 0;">Niebieskie pole = osoba ma zmianę w Grafiku. Dzień bez ręcznej obsady podpowiada osoby z Grafiku; po zmianie zaznaczeń dzień dostaje obsadę „ręcznie”. Osoba wprowadzająca napiwki i tak może dodać lub usunąć kelnera w formularzu.</div>';
         html += '<button class="snspa-save" type="button" id="snspa-q-week-save"' + (state.qDirty ? '' : ' disabled') + '>' + (state.qDirty ? 'Zapisz tydzień' : 'Brak zmian do zapisania') + '</button>';
         html += '</div>';
+        html += renderWaiterOrder();
         return html;
+    }
+
+    // Kolejność wyświetlania kelnerów — obsada, szybkie napiwki, karta managera w „Dzień”.
+    function renderWaiterOrder(){
+        var o = state.qOrder || [];
+        var html = '<div class="snspa-card role-summary snspa-settings" style="grid-column:1/-1;"><h3><i class="fas fa-arrow-down-short-wide"></i> Kolejność kelnerów</h3>';
+        html += '<div class="snspa-muted" style="margin-bottom:8px;">Ta kolejność obowiązuje w obsadzie, w szybkich napiwkach na telefonie i w karcie managera w zakładce Dzień. Nowi kelnerzy trafiają na koniec listy.</div>';
+        o.forEach(function(p, i){
+            html += '<div class="snspa-row" style="align-items:center;"><span><span class="snspa-muted" style="display:inline-block;width:22px;">' + (i + 1) + '.</span><b>' + esc(p.name) + '</b></span><span style="white-space:nowrap;">' +
+                '<button class="snspa-dept-btn" type="button" data-q-ord="' + i + '|-1"' + (i === 0 ? ' disabled' : '') + ' title="Wyżej"><i class="fas fa-arrow-up"></i></button> ' +
+                '<button class="snspa-dept-btn" type="button" data-q-ord="' + i + '|1"' + (i === o.length - 1 ? ' disabled' : '') + ' title="Niżej"><i class="fas fa-arrow-down"></i></button></span></div>';
+        });
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"><button class="snspa-save" style="width:auto;margin:0;" type="button" id="snspa-q-order-save"' + (state.qOrderDirty ? '' : ' disabled') + '>Zapisz kolejność</button>' +
+            ((state.quick && state.quick.orderCustom) || state.qOrderDirty ? '<button class="snspa-save secondary" style="width:auto;margin:0;" type="button" id="snspa-q-order-alpha">Alfabetycznie</button>' : '') + '</div>';
+        return html + '</div>';
     }
     function quickSaveWeek(){
         var w = state.quick.week, days = {};
@@ -1595,6 +1612,21 @@ function snspa_js_body() {
             var m = {}; day.schedule.forEach(function(id){ m[id] = true; });
             state.qSel[d] = m; state.qReset[d] = true; state.qDirty = true; render();
         }); });
+        root.querySelectorAll('[data-q-ord]').forEach(function(el){ el.addEventListener('click', function(){
+            var p = el.dataset.qOrd.split('|'), i = +p[0], j = i + (+p[1]), o = state.qOrder;
+            if (j < 0 || j >= o.length) return;
+            o.splice(j, 0, o.splice(i, 1)[0]); state.qOrderDirty = true; state.quickMsg = null; render();
+        }); });
+        var qOrdSave = root.querySelector('#snspa-q-order-save');
+        if (qOrdSave) qOrdSave.addEventListener('click', function(){
+            if (state.qDirty && !confirm('Masz niezapisane zmiany w obsadzie tygodnia — zapisanie kolejności je porzuci. Kontynuować?')) return;
+            quickSave({ action: 'order', ids: state.qOrder.map(function(p){ return p.id; }) }, 'Kolejność kelnerów zapisana.');
+        });
+        var qOrdAlpha = root.querySelector('#snspa-q-order-alpha');
+        if (qOrdAlpha) qOrdAlpha.addEventListener('click', function(){
+            if (!confirm('Przywrócić kolejność alfabetyczną?')) return;
+            quickSave({ action: 'order', ids: [] }, 'Przywrócono kolejność alfabetyczną.');
+        });
         var qWeekSave = root.querySelector('#snspa-q-week-save');
         if (qWeekSave) qWeekSave.addEventListener('click', quickSaveWeek);
         if (state.tab === 'waiterSettlement' && state.wsData) updateWsDiffs();
