@@ -382,6 +382,8 @@ function snspa_get_day_data($date) {
             $sumCard += $c; $sumService += $s;
         }
         $out['manager'] = ['waiters' => $rows, 'sumCard' => $sumCard, 'sumService' => $sumService];
+        // Kto wpisał karty/serwis tego dnia (szybkie napiwki albo panel kierownika).
+        $out['manager']['enteredBy'] = function_exists('snspa_entry_log_get') ? snspa_entry_log_get($date) : null;
     }
 
     // --- ADMIN_BAR: godziny barmanów (+ pomoc kelnerów) ---
@@ -601,6 +603,7 @@ function snspa_rest_save_day(WP_REST_Request $req) {
             $amt = floatval($amt);
             if ($amt > 0) $wpdb->insert("{$wpdb->prefix}sn_waiter_service", ['date' => $date, 'waiter_id' => intval($id), 'amount' => $amt]);
         }
+        if (function_exists('snspa_entry_log_record')) snspa_entry_log_record($date, $u_id, 'panel');
     }
 
     if ($f['isAdminBar'] && !empty($body['bar'])) {

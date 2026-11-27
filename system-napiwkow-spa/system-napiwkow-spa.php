@@ -2,13 +2,13 @@
 /*
 Plugin Name: Gastronomia - System Napiwków SPA
 Description: Responsywna aplikacja SPA (jeden widok, karty według roli) zgodna z logiką obliczeniową wtyczki "System Napiwków" (ulga podatkowa < 26 lat, pule 10% bar / 20% kuchnia / 70% kelner, rozliczanie godzinowe barmanów i kucharzy). Korzysta z tych samych tabel bazy danych, ustawień i pól profilu użytkownika co oryginalna wtyczka, więc może ją zastąpić bez utraty danych.
-Version: 1.3.0
+Version: 1.3.1
 Author: Claude
 */
 
 if (!defined('ABSPATH')) exit;
 
-define('SNSPA_VERSION', '1.3.0');
+define('SNSPA_VERSION', '1.3.1');
 define('SNSPA_REST_NS', 'sn-spa/v1');
 define('SNSPA_DB_VERSION', '1.2');
 

@@ -491,3 +491,9 @@ z telefonu, wyłącznie za dzisiejszy dzień.
   i przycisk „Edytuj”.
 - Ustawienia → „Szybkie napiwki”: adres strony, nadawanie/zmiana/odbieranie PIN-ów,
   obsada dnia (z podpowiedzią z Grafiku). Tylko administrator strony.
+
+== 1.3.1 — kto wpisał napiwki ==
+W zakładce „Dzień”, w karcie managera („karta / serwis kelnerów”), widać, kto wpisał
+napiwki z karty i serwisu na ten dzień: osoba, sposób (szybkie napiwki z telefonu albo
+panel kierownika), data i godzina; poniżej do 5 wcześniejszych zapisów tego dnia.
+Dni wpisane przed aktualizacją przez panel kierownika: „autor nieznany”.

@@ -594,6 +594,7 @@ function snspa_js_body() {
 
         if (d.manager){
             html += '<div class="snspa-card role-manager"><h3>Manager — karta / serwis kelnerów</h3>';
+            html += renderEnteredBy(d.manager.enteredBy, d.manager.sumCard + d.manager.sumService > 0);
             d.manager.waiters.forEach(function(w){
                 html += '<div class="snspa-row"><span class="name">' + w.name + '</span><span>' +
                     'K:<input type="number" step="0.01" data-mgr-card="' + w.id + '" value="' + w.card + '">' +
@@ -1065,6 +1066,21 @@ function snspa_js_body() {
                 alert('Błąd generowania PDF: ' + (err && err.message ? err.message : err));
             }
         });
+    }
+
+    // „Kto wpisał” — widoczne dla managera w karcie dnia.
+    function renderEnteredBy(e, hasData){
+        var via = function(v){ return v === 'panel' ? 'panel kierownika' : 'szybkie napiwki (telefon)'; };
+        var when = function(at){ return at ? fmtDate(at.slice(0,10)) + ', ' + at.slice(11,16) : ''; };
+        if (!e){
+            return hasData ? '<div class="snspa-muted" style="margin:-4px 0 10px;font-size:12px;"><i class="fas fa-user-pen"></i> Wpisane przed włączeniem rejestru — autor nieznany.</div>' : '';
+        }
+        var h = '<div style="margin:-4px 0 10px;padding:8px 10px;border-radius:10px;background:var(--rs-accent-soft,#eff6ff);font-size:13px;">' +
+            '<i class="fas fa-user-pen"></i> Wpisał(a): <b>' + esc(e.by) + '</b> — ' + via(e.via) + ' · ' + when(e.at);
+        if (e.history && e.history.length){
+            h += '<div class="snspa-muted" style="font-size:11.5px;margin-top:3px;">Wcześniej: ' + e.history.map(function(x){ return esc(x.by) + ' (' + (x.via === 'panel' ? 'panel' : 'telefon') + ', ' + when(x.at) + ')'; }).join('; ') + '</div>';
+        }
+        return h + '</div>';
     }
 
     function renderWaiterSettlement(){

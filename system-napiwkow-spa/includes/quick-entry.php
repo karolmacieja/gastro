@@ -100,11 +100,10 @@ function snspa_quick_day_payload($date, $user_id) {
     foreach ($wpdb->get_results($wpdb->prepare("SELECT waiter_id, SUM(amount) AS a FROM {$wpdb->prefix}sn_waiter_service WHERE date=%s GROUP BY waiter_id", $date)) as $row) {
         $entries[(int) $row->waiter_id]['service'] = round((float) $row->a, 2);
     }
-    $log = get_option(SNSPA_QUICK_LOG, []);
+    $entry = snspa_entry_log_get($date);
     $saved = null;
-    if (!empty($log[$date])) {
-        $u = get_userdata((int) $log[$date]['by']);
-        $saved = ['by' => $u ? $u->display_name : '—', 'at' => $log[$date]['at']];
+    if ($entry) {
+        $saved = ['by' => $entry['by'] . ($entry['via'] === 'panel' ? ' (panel kierownika)' : ''), 'at' => $entry['at']];
     } elseif ($entries) {
         $saved = ['by' => 'panel kierownika', 'at' => ''];
     }
@@ -118,6 +117,41 @@ function snspa_quick_day_payload($date, $user_id) {
         }, $r['ids']),
         'allWaiters' => array_map(function ($id, $name) { return ['id' => $id, 'name' => $name]; }, array_keys($all), array_values($all)),
         'saved' => $saved,
+    ];
+}
+
+/* ---------------------------------------------------------
+ * Kto wpisał napiwki (karta/serwis) na dany dzień — zapis przez szybkie
+ * napiwki i przez panel kierownika. Ostatni wpis + do 5 wcześniejszych.
+ * Format opcji: [ Y-m-d => [ 'by', 'at', 'via' => quick|panel, 'history' => [...] ] ]
+ * (starsze wpisy z 1.3.0 nie mają 'via' — to były szybkie napiwki).
+ * --------------------------------------------------------- */
+
+function snspa_entry_log_record($date, $user_id, $via) {
+    $log = get_option(SNSPA_QUICK_LOG, []);
+    $log = is_array($log) ? $log : [];
+    $prev = $log[$date] ?? null;
+    $history = [];
+    if ($prev) {
+        $history = (array) ($prev['history'] ?? []);
+        array_unshift($history, ['by' => (int) $prev['by'], 'at' => $prev['at'], 'via' => $prev['via'] ?? 'quick']);
+        $history = array_slice($history, 0, 5);
+    }
+    $log[$date] = ['by' => (int) $user_id, 'at' => current_time('Y-m-d H:i:s'), 'via' => $via, 'history' => $history];
+    update_option(SNSPA_QUICK_LOG, array_slice($log, -120, null, true), false);
+}
+
+/** [ 'by' => nazwa, 'at', 'via', 'history' => [ ... ] ] albo null. */
+function snspa_entry_log_get($date) {
+    $log = get_option(SNSPA_QUICK_LOG, []);
+    if (empty($log[$date])) return null;
+    $name = function ($id) { $u = get_userdata((int) $id); return $u ? $u->display_name : '—'; };
+    $e = $log[$date];
+    return [
+        'by' => $name($e['by']),
+        'at' => $e['at'],
+        'via' => $e['via'] ?? 'quick',
+        'history' => array_map(function ($h) use ($name) { return ['by' => $name($h['by']), 'at' => $h['at'], 'via' => $h['via'] ?? 'quick']; }, (array) ($e['history'] ?? [])),
     ];
 }
 
@@ -257,10 +291,7 @@ function snspa_quick_rest_save_day(WP_REST_Request $req) {
     $roster = array_slice($roster, -60, null, true); // ostatnie 60 dni
     update_option(SNSPA_QUICK_ROSTER, $roster, false);
 
-    $log = get_option(SNSPA_QUICK_LOG, []);
-    $log = is_array($log) ? $log : [];
-    $log[$date] = ['by' => $s['user'], 'at' => current_time('Y-m-d H:i:s')];
-    update_option(SNSPA_QUICK_LOG, array_slice($log, -120, null, true), false);
+    snspa_entry_log_record($date, $s['user'], 'quick');
 
     snspa_recalculate($date);
     $out = snspa_quick_day_payload($date, $s['user']);
