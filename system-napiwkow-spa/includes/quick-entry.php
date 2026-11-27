@@ -10,9 +10,9 @@
  * plus każdy, kto ma już wpis na ten dzień. Osobę można dodać z listy
  * albo usunąć.
  *
- * Zapis działa jak zapis kierownika w zakładce „Dzień”: zastępuje karty
- * i serwis całego dnia, po czym przelicza dzień (snspa_recalculate).
- * Jeśli kierownik już coś wpisał — formularz otwiera się z tymi kwotami.
+ * Zapis zmienia tylko pola zmienione w formularzu (od 1.3.5) — nie kasuje kwot
+ * wpisanych w międzyczasie przez innych ani kwot osób spoza formularza; potem
+ * przelicza dzień. Jeśli kierownik już coś wpisał — formularz otwiera się z tymi kwotami.
  *
  * Bezpieczeństwo:
  *  - PIN-y przechowywane jako hash (wp_hash_password), unikalne,
@@ -296,21 +296,20 @@ function snspa_quick_rest_save_day(WP_REST_Request $req) {
     $all = snspa_quick_all_waiters($date);
     $rows = (array) ($req->get_json_params()['rows'] ?? []);
 
-    $cards = []; $service = [];
+    // Tylko pola ZMIENIONE w formularzu (nowa wartość ≠ wartość z chwili otwarcia):
+    // zapis nie kasuje kwot wpisanych w międzyczasie przez kogoś innego ani kwot osób,
+    // których nie ma w formularzu. Pozostali kelnerzy — bez zmian.
+    $changed = 0;
     foreach ($rows as $r) {
         $id = intval($r['id'] ?? 0);
         if (!isset($all[$id])) continue; // tylko kelnerzy
-        $c = snspa_quick_amount($r['card'] ?? 0);
-        $v = snspa_quick_amount($r['service'] ?? 0);
-        if ($c > 0) $cards[$id] = $c;
-        if ($v > 0) $service[$id] = $v;
+        foreach (['card' => 'sn_waiter_tips', 'service' => 'sn_waiter_service'] as $k => $table) {
+            $new = snspa_quick_amount($r[$k] ?? 0);
+            if (array_key_exists('orig_' . $k, $r) && snspa_quick_amount($r['orig_' . $k]) === $new) continue;
+            snspa_set_waiter_amount($table, $date, $id, $new);
+            $changed++;
+        }
     }
-
-    // Jak zapis kierownika: karty i serwis całego dnia są zastępowane.
-    $wpdb->delete("{$wpdb->prefix}sn_waiter_tips", ['date' => $date]);
-    $wpdb->delete("{$wpdb->prefix}sn_waiter_service", ['date' => $date]);
-    foreach ($cards as $id => $amt) $wpdb->insert("{$wpdb->prefix}sn_waiter_tips", ['date' => $date, 'waiter_id' => $id, 'amount' => $amt]);
-    foreach ($service as $id => $amt) $wpdb->insert("{$wpdb->prefix}sn_waiter_service", ['date' => $date, 'waiter_id' => $id, 'amount' => $amt]);
 
     // Zapamiętujemy listę osób (także z zerami), żeby po edycji wróciła ta sama obsada.
     $roster = get_option(SNSPA_QUICK_ROSTER, []);
@@ -321,11 +320,12 @@ function snspa_quick_rest_save_day(WP_REST_Request $req) {
     $roster = array_slice($roster, -90, null, true); // ostatnie 90 dni (z planem na przyszłe tygodnie)
     update_option(SNSPA_QUICK_ROSTER, $roster, false);
 
-    snspa_entry_log_record($date, $s['user'], 'quick');
+    if ($changed) snspa_entry_log_record($date, $s['user'], 'quick');
 
-    snspa_recalculate($date);
+    if ($changed) snspa_recalculate($date);
     $out = snspa_quick_day_payload($date, $s['user']);
     $out['justSaved'] = true;
+    $out['changed'] = $changed;
     return $out;
 }
 
@@ -571,7 +571,7 @@ function snspa_quick_js() {
 
   function loadDay(d) {
     st.day = d;
-    st.rows = d.waiters.map(function (w) { return { id: w.id, name: w.name, card: w.card ? String(w.card).replace('.', ',') : '', service: w.service ? String(w.service).replace('.', ',') : '' }; });
+    st.rows = d.waiters.map(function (w) { return { id: w.id, name: w.name, card: w.card ? String(w.card).replace('.', ',') : '', service: w.service ? String(w.service).replace('.', ',') : '', origCard: w.card || 0, origService: w.service || 0 }; });
     // Dzień już zapisany → najpierw podsumowanie; inaczej od razu formularz.
     st.edit = !d.saved;
   }
@@ -622,7 +622,7 @@ function snspa_quick_js() {
   function renderForm() {
     var d = st.day, used = {}, h = head();
     st.rows.forEach(function (r) { used[r.id] = 1; });
-    if (d.saved) h += '<div class="okbox" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">Edytujesz zapisany dzień<small style="color:#1d4ed8;">Zapis zastąpi poprzednie kwoty z tego dnia.</small></div>';
+    if (d.saved) h += '<div class="okbox" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">Edytujesz zapisany dzień<small style="color:#1d4ed8;">Zapisane zostaną tylko pola, które zmienisz — pozostałe kwoty zostają bez zmian.</small></div>';
     else if (d.source === 'grafik') h += '<p class="hint" style="margin:0 0 10px;">Lista z Grafiku — osoby na dzisiejszej zmianie.</p>';
     else if (d.source === 'admin') h += '<p class="hint" style="margin:0 0 10px;">Lista ustawiona przez administratora.</p>';
     st.rows.forEach(function (r, i) {
@@ -647,12 +647,17 @@ function snspa_quick_js() {
       el.oninput = function () { st.rows[+el.dataset.i][el.dataset.k] = el.value; var t = totals(); document.getElementById('snq-tot').textContent = zl(t.c + t.s); };
     });
     root.querySelectorAll('[data-rm]').forEach(function (el) {
-      el.onclick = function () { var r = st.rows[+el.dataset.rm]; if ((num(r.card) || num(r.service)) && !confirm('Usunąć ' + r.name + ' z listy? Wpisane kwoty znikną.')) return; st.rows.splice(+el.dataset.rm, 1); render(); };
+      el.onclick = function () {
+        var r = st.rows[+el.dataset.rm];
+        if (r.origCard || r.origService) { alert(r.name + ' ma już zapisane kwoty — nie znikną z dnia. Aby je skasować, wpisz 0 w polach i zapisz.'); return; }
+        if ((num(r.card) || num(r.service)) && !confirm('Usunąć ' + r.name + ' z listy? Niezapisane kwoty znikną.')) return;
+        st.rows.splice(+el.dataset.rm, 1); render();
+      };
     });
     var add = document.getElementById('snq-add');
     if (add) add.onchange = function () {
       var w = d.allWaiters.filter(function (x) { return String(x.id) === add.value; })[0];
-      if (w) { st.rows.push({ id: w.id, name: w.name, card: '', service: '' }); render(); var ins = root.querySelectorAll('input[data-k="card"]'); if (ins.length) ins[ins.length - 1].focus(); }
+      if (w) { st.rows.push({ id: w.id, name: w.name, card: '', service: '', origCard: 0, origService: 0 }); render(); var ins = root.querySelectorAll('input[data-k="card"]'); if (ins.length) ins[ins.length - 1].focus(); }
     };
     var cancel = document.getElementById('snq-cancel');
     if (cancel) cancel.onclick = function () { loadDay(st.day); render(); };
@@ -661,10 +666,17 @@ function snspa_quick_js() {
   }
 
   function save() {
-    var t = totals();
-    if (!t.c && !t.s && !confirm('Nie wpisano żadnych kwot. Zapisać pusty dzień (usunie to wpisane wcześniej kwoty)?')) return;
+    // Wysyłamy tylko zmienione wiersze (z wartościami z chwili otwarcia) — reszta dnia zostaje.
+    var rows = st.rows.filter(function (r) { return num(r.card) !== r.origCard || num(r.service) !== r.origService; })
+      .map(function (r) { return { id: r.id, card: num(r.card), service: num(r.service), orig_card: r.origCard, orig_service: r.origService }; });
+    if (!rows.length) {
+      if (st.day.saved) { st.edit = false; render(); return; }
+      st.msg = 'Nie wpisano żadnych kwot.'; render(); return;
+    }
+    var cleared = rows.filter(function (r) { return (r.orig_card && !r.card) || (r.orig_service && !r.service); });
+    if (cleared.length && !confirm('Wyczyszczono zapisane kwoty u: ' + cleared.map(function (r) { return st.rows.filter(function (x) { return x.id === r.id; })[0].name; }).join(', ') + '. Zapisać?')) return;
     st.busy = true; st.msg = ''; render();
-    api('/day', 'POST', { rows: st.rows.map(function (r) { return { id: r.id, card: num(r.card), service: num(r.service) }; }) })
+    api('/day', 'POST', { rows: rows })
       .then(function (d) { st.busy = false; loadDay(d); st.edit = false; render(); window.scrollTo(0, 0); })
       .catch(function (err) { st.busy = false; if (err.status === 401) { setToken(null); st.day = null; } st.msg = err.message; render(); });
   }

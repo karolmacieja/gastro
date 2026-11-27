@@ -599,8 +599,8 @@ function snspa_js_body() {
             html += renderEnteredBy(d.manager.enteredBy, d.manager.sumCard + d.manager.sumService > 0);
             d.manager.waiters.forEach(function(w){
                 html += '<div class="snspa-row"><span class="name">' + w.name + '</span><span>' +
-                    'K:<input type="number" step="0.01" data-mgr-card="' + w.id + '" value="' + w.card + '">' +
-                    ' S:<input type="number" step="0.01" data-mgr-service="' + w.id + '" value="' + w.service + '">' +
+                    'K:<input type="number" step="0.01" data-mgr-card="' + w.id + '" data-orig="' + w.card + '" value="' + w.card + '">' +
+                    ' S:<input type="number" step="0.01" data-mgr-service="' + w.id + '" data-orig="' + w.service + '" value="' + w.service + '">' +
                     '</span></div>';
             });
             html += '<div class="snspa-total"><span>Suma</span><span>Karta ' + fmt(d.manager.sumCard) + ' / Serwis ' + fmt(d.manager.sumService) + '</span></div>';
@@ -1705,7 +1705,9 @@ function snspa_js_body() {
     function save(section){
         var payload = { date: state.date };
         if (section === 'manager'){
-            payload.manager = { cards: collect('data-mgr-card'), service: collect('data-mgr-service') };
+            payload.manager = { cards: collect('data-mgr-card'), service: collect('data-mgr-service'),
+                // wartości z chwili otwarcia — serwer zapisze tylko zmienione pola
+                orig: { card: collectOrig('data-mgr-card'), service: collectOrig('data-mgr-service') } };
         } else if (section === 'bar'){
             var helperSel = root.querySelector('#snspa-bar-helper-select');
             payload.bar = { hours: collect('data-bar-hours'), extraCard: collect('data-bar-extra'),

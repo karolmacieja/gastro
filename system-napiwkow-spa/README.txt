@@ -485,7 +485,7 @@ z telefonu, wyłącznie za dzisiejszy dzień.
 - Lista kelnerów: obsada ustawiona przez administratora na ten dzień, a bez niej — kelnerzy
   z Grafiku (opublikowane zmiany), plus każdy, kto ma już wpis. Osobę można dodać z listy
   lub usunąć.
-- Zapis działa jak zapis kierownika w zakładce „Dzień”: zastępuje karty i serwis całego
+- Zapis (od 1.3.5) zmienia tylko pola zmienione w formularzu — patrz 1.3.5. Wcześniej:
   dnia i przelicza dzień. Jeśli kierownik już wpisał kwoty — formularz otwiera się z nimi.
 - Po zapisie: komunikat „Dane zostały zapisane” (kto, o której), tabela podsumowania
   i przycisk „Edytuj”.
@@ -514,3 +514,10 @@ Dzień → Obsada dnia → „Kolejność kelnerów”: strzałkami ustawiasz ko
 „Zapisz kolejność” albo „Alfabetycznie” (powrót do kolejności alfabetycznej). Obowiązuje
 w obsadzie tygodnia, w szybkich napiwkach (lista w formularzu i „Dodaj osobę”) oraz w karcie
 managera w zakładce Dzień. Nowi kelnerzy trafiają na koniec (alfabetycznie).
+
+== 1.3.5 — edycja dnia nie kasuje wpisanych kwot ==
+Zapis dnia (szybkie napiwki i karta managera w zakładce Dzień) zmienia tylko pola zmienione
+w formularzu — porównuje z wartościami z chwili otwarcia. Nie kasuje kwot wpisanych
+w międzyczasie przez inną osobę ani kwot kelnerów, których nie ma w formularzu.
+Szybkie napiwki: „×” przy kelnerze z zapisanymi kwotami nie usuwa ich (komunikat: wpisz 0,
+aby skasować); wyczyszczenie zapisanej kwoty wymaga potwierdzenia; zapis bez zmian nic nie zmienia.

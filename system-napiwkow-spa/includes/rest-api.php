@@ -588,6 +588,18 @@ function snspa_upsert_staff_rows($date, $type, array $hours, array $extra, $orig
 /* -----------------------------------------------------------
  * POST /day — zapis, tylko sekcje do których użytkownik ma prawo
  * ----------------------------------------------------------- */
+/**
+ * Ustawia kwotę karty/serwisu JEDNEGO kelnera na dany dzień (0 = usunięcie),
+ * nie ruszając wpisów pozostałych kelnerów.
+ */
+function snspa_set_waiter_amount($table_suffix, $date, $waiter_id, $amount) {
+    global $wpdb;
+    $table = $wpdb->prefix . $table_suffix;
+    $amount = round(max(0, floatval($amount)), 2);
+    $wpdb->delete($table, ['date' => $date, 'waiter_id' => $waiter_id]);
+    if ($amount > 0) $wpdb->insert($table, ['date' => $date, 'waiter_id' => $waiter_id, 'amount' => $amount]);
+}
+
 function snspa_rest_save_day(WP_REST_Request $req) {
     global $wpdb;
     $f = snspa_current_flags();
@@ -598,15 +610,29 @@ function snspa_rest_save_day(WP_REST_Request $req) {
     $conflicts = ['kept' => [], 'overwritten' => []];
 
     if ($f['isManager'] && !empty($body['manager'])) {
-        $wpdb->delete("{$wpdb->prefix}sn_waiter_tips", ['date' => $date]);
-        $wpdb->delete("{$wpdb->prefix}sn_waiter_service", ['date' => $date]);
-        foreach ((array) ($body['manager']['cards'] ?? []) as $id => $amt) {
-            $amt = floatval($amt);
-            if ($amt > 0) $wpdb->insert("{$wpdb->prefix}sn_waiter_tips", ['date' => $date, 'waiter_id' => intval($id), 'amount' => $amt]);
-        }
-        foreach ((array) ($body['manager']['service'] ?? []) as $id => $amt) {
-            $amt = floatval($amt);
-            if ($amt > 0) $wpdb->insert("{$wpdb->prefix}sn_waiter_service", ['date' => $date, 'waiter_id' => intval($id), 'amount' => $amt]);
+        // Zapisujemy tylko pola ZMIENIONE w formularzu (wartość ≠ wartości z chwili otwarcia),
+        // więc zapis nie kasuje kwot wpisanych w międzyczasie przez kogoś innego
+        // (np. szybkie napiwki z telefonu). Bez „orig” (stara wersja strony) — jak dawniej.
+        $orig = $body['manager']['orig'] ?? null;
+        if (is_array($orig)) {
+            foreach (['cards' => ['sn_waiter_tips', 'card'], 'service' => ['sn_waiter_service', 'service']] as $key => $conf) {
+                foreach ((array) ($body['manager'][$key] ?? []) as $id => $amt) {
+                    $was = $orig[$conf[1]][$id] ?? null;
+                    if ($was !== null && round(floatval($was), 2) === round(floatval($amt), 2)) continue;
+                    snspa_set_waiter_amount($conf[0], $date, intval($id), $amt);
+                }
+            }
+        } else {
+            $wpdb->delete("{$wpdb->prefix}sn_waiter_tips", ['date' => $date]);
+            $wpdb->delete("{$wpdb->prefix}sn_waiter_service", ['date' => $date]);
+            foreach ((array) ($body['manager']['cards'] ?? []) as $id => $amt) {
+                $amt = floatval($amt);
+                if ($amt > 0) $wpdb->insert("{$wpdb->prefix}sn_waiter_tips", ['date' => $date, 'waiter_id' => intval($id), 'amount' => $amt]);
+            }
+            foreach ((array) ($body['manager']['service'] ?? []) as $id => $amt) {
+                $amt = floatval($amt);
+                if ($amt > 0) $wpdb->insert("{$wpdb->prefix}sn_waiter_service", ['date' => $date, 'waiter_id' => intval($id), 'amount' => $amt]);
+            }
         }
         if (function_exists('snspa_entry_log_record')) snspa_entry_log_record($date, $u_id, 'panel');
     }
