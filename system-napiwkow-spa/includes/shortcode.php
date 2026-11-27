@@ -258,7 +258,8 @@ function snspa_js_body() {
                   emailM: (new Date().getMonth()+1), emailY: new Date().getFullYear(), emailTemplates: {}, emailMsg: {},
                   pushM: (new Date().getMonth()+1), pushY: new Date().getFullYear(), pushTemplates: {}, pushMsg: {},
                   onesignalSettings: null, percentOverrides: null,
-                  srM: (new Date().getMonth()+1), srY: new Date().getFullYear(), srDept: 'kuchnia', srData: null };
+                  srM: (new Date().getMonth()+1), srY: new Date().getFullYear(), srDept: 'kuchnia', srData: null,
+                  quick: null, quickDate: null, quickMsg: null };
 
     function fmt(n){ n = parseFloat(n||0); return n.toLocaleString('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2}); }
     function fmtDate(iso){ var p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
@@ -477,6 +478,7 @@ function snspa_js_body() {
         if (id === 'day' && !state.day) loadDay();
         if (id === 'month' && !state.month) loadMonth();
         if (id === 'settings' && !state.settings) loadSettings();
+        if (id === 'settings' && !state.quick && (state.flags || {}).canSectionReport) loadQuick();
         if (id === 'settings' && !state.onesignalSettings) { api('/onesignal-settings').then(function(d){ state.onesignalSettings = d; render(); }); }
         if (id === 'check' && !state.staffList) { loadStaffList().then(render); }
         if (id === 'servicePool' && !state.poolData) loadServicePool();
@@ -1300,7 +1302,57 @@ function snspa_js_body() {
                 '<i class="fas fa-circle-info"></i> Powiadomienia push są nieaktywne — skonfiguruj Firebase Cloud Messaging centralnie w panelu GastroFlowx (Integracje), żeby włączyć je tu i we wszystkich innych modułach.</div></div>';
         }
 
+        if ((state.flags || {}).canSectionReport) html += renderQuickAdmin();
+
         html += '</div></div>';
+        return html;
+    }
+
+    /* ---------------------------------------------------------
+     * SZYBKIE NAPIWKI — administracja (osoby z PIN-em, obsada dnia).
+     * --------------------------------------------------------- */
+    function loadQuick(date){
+        api('/quick/admin' + (date ? '?date=' + date : '')).then(function(d){ state.quick = d; state.quickDate = d.date; render(); })
+            .catch(function(e){ state.quickMsg = { text: e.message, err: true }; render(); });
+    }
+    function quickSave(body, okText){
+        state.quickMsg = null;
+        api('/quick/admin', 'POST', body).then(function(d){ state.quick = d; state.quickDate = d.date; state.quickMsg = { text: okText }; render(); })
+            .catch(function(e){ state.quickMsg = { text: e.message, err: true }; render(); });
+    }
+    function renderQuickAdmin(){
+        var q = state.quick;
+        var html = '<div class="snspa-card role-summary snspa-settings" style="grid-column:1/-1;"><h3><i class="fas fa-mobile-screen-button"></i> Szybkie napiwki (telefon + PIN)</h3>';
+        if (!q){ return html + '<div class="snspa-loading">Ładowanie…</div></div>'; }
+        if (state.quickMsg) html += '<div class="snspa-msg' + (state.quickMsg.err ? ' err' : '') + '">' + esc(state.quickMsg.text) + '</div>';
+        html += '<div class="snspa-muted" style="margin-bottom:10px;">Wyznaczone osoby otwierają na telefonie adres poniżej, wpisują swój PIN i wprowadzają napiwki z karty i serwisu kelnerów — tylko za dzisiejszy dzień. Na iPhonie: Safari → Udostępnij → „Dodaj do ekranu początkowego”; na Androidzie: Chrome → ⋮ → „Dodaj do ekranu głównego”.</div>';
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;"><input type="text" readonly value="' + esc(q.url) + '" id="snspa-q-url" style="flex:1;min-width:220px;"><button class="snspa-save secondary" style="width:auto;margin:0;" id="snspa-q-copy" type="button"><i class="fas fa-copy"></i> Kopiuj</button></div>';
+
+        html += '<h4 style="margin:6px 0;">Osoby z dostępem</h4>';
+        if (!q.people.length) html += '<div class="snspa-muted">Nikt jeszcze nie ma PIN-u.</div>';
+        q.people.forEach(function(p){
+            html += '<div class="snspa-row"><span><b>' + esc(p.name) + '</b>' + (p.set ? ' <span class="snspa-muted" style="font-size:11px;">PIN ustawiony ' + esc(p.set) + '</span>' : '') + '</span>' +
+                '<span><button class="snspa-dept-btn" type="button" data-q-pin="' + p.id + '">Zmień PIN</button> <button class="snspa-dept-btn" type="button" data-q-remove="' + p.id + '" style="color:var(--rs-danger);">Odbierz dostęp</button></span></div>';
+        });
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:10px 0 18px;">' +
+            '<label style="flex:1;min-width:200px;">Osoba<select id="snspa-q-user"><option value="">— wybierz —</option>' +
+            q.candidates.map(function(c){ return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') + '</select></label>' +
+            '<label style="width:140px;">PIN (4–8 cyfr)<input type="text" inputmode="numeric" maxlength="8" id="snspa-q-pin" autocomplete="off"></label>' +
+            '<button class="snspa-save" style="width:auto;margin:0;" id="snspa-q-add" type="button">Nadaj PIN</button></div>';
+
+        html += '<h4 style="margin:6px 0;">Obsada dnia (opcjonalnie)</h4>';
+        html += '<div class="snspa-muted" style="margin-bottom:8px;">Bez obsady formularz podpowiada kelnerów z Grafiku na ten dzień; osoba wprowadzająca i tak może dodać lub usunąć kelnera.</div>';
+        html += '<label>Dzień <input type="date" id="snspa-q-date" value="' + esc(q.date) + '"></label>';
+        var sched = {}; q.schedule.forEach(function(id){ sched[id] = 1; });
+        var sel = {}; (q.roster.length ? q.roster : q.schedule).forEach(function(id){ sel[id] = 1; });
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin:10px 0;">';
+        q.waiters.forEach(function(w){
+            html += '<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" data-q-w="' + w.id + '"' + (sel[w.id] ? ' checked' : '') + '> ' + esc(w.name) + (sched[w.id] ? ' <span class="snspa-tag">grafik</span>' : '') + '</label>';
+        });
+        html += '</div><div class="snspa-muted" style="margin-bottom:8px;">' + (q.roster.length ? 'Obsada ustawiona ręcznie.' : (q.schedule.length ? 'Zaznaczeni wg Grafiku (nie zapisano obsady).' : 'Brak zmian w Grafiku na ten dzień.')) + '</div>';
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="snspa-save" style="width:auto;margin:0;" type="button" id="snspa-q-roster">Zapisz obsadę</button>' +
+            (q.roster.length ? '<button class="snspa-save secondary" style="width:auto;margin:0;" type="button" id="snspa-q-roster-clear">Wróć do Grafiku</button>' : '') + '</div>';
+        html += '</div>';
         return html;
     }
 
@@ -1441,6 +1493,30 @@ function snspa_js_body() {
             el.addEventListener('click', function(){ state.srDept = el.dataset.srDept; state.msg = null; loadSectionReport(); });
         });
         root.querySelectorAll('[data-sr-pdf]').forEach(function(el){ el.addEventListener('click', sectionReportPdf); });
+        // Szybkie napiwki — administracja
+        var qCopy = root.querySelector('#snspa-q-copy');
+        if (qCopy) qCopy.addEventListener('click', function(){ var i = root.querySelector('#snspa-q-url'); i.select(); try { navigator.clipboard.writeText(i.value); } catch (e) { document.execCommand('copy'); } qCopy.textContent = 'Skopiowano'; });
+        var qAdd = root.querySelector('#snspa-q-add');
+        if (qAdd) qAdd.addEventListener('click', function(){
+            quickSave({ action: 'set_pin', user_id: parseInt(root.querySelector('#snspa-q-user').value || '0', 10), pin: root.querySelector('#snspa-q-pin').value }, 'PIN zapisany. Przekaż go tej osobie — później nie będzie już widoczny.');
+        });
+        root.querySelectorAll('[data-q-pin]').forEach(function(el){ el.addEventListener('click', function(){
+            var pin = prompt('Nowy PIN (4–8 cyfr):'); if (pin === null) return;
+            quickSave({ action: 'set_pin', user_id: parseInt(el.dataset.qPin, 10), pin: pin }, 'PIN zmieniony.');
+        }); });
+        root.querySelectorAll('[data-q-remove]').forEach(function(el){ el.addEventListener('click', function(){
+            if (!confirm('Odebrać tej osobie dostęp do szybkich napiwków?')) return;
+            quickSave({ action: 'remove', user_id: parseInt(el.dataset.qRemove, 10) }, 'Dostęp odebrany.');
+        }); });
+        var qDate = root.querySelector('#snspa-q-date');
+        if (qDate) qDate.addEventListener('change', function(){ state.quickMsg = null; loadQuick(qDate.value); });
+        var qRoster = root.querySelector('#snspa-q-roster');
+        if (qRoster) qRoster.addEventListener('click', function(){
+            var ids = []; root.querySelectorAll('[data-q-w]').forEach(function(c){ if (c.checked) ids.push(parseInt(c.dataset.qW, 10)); });
+            quickSave({ action: 'roster', date: root.querySelector('#snspa-q-date').value, ids: ids }, ids.length ? 'Obsada zapisana.' : 'Obsada usunięta — formularz podpowie kelnerów z Grafiku.');
+        });
+        var qClear = root.querySelector('#snspa-q-roster-clear');
+        if (qClear) qClear.addEventListener('click', function(){ quickSave({ action: 'roster', date: root.querySelector('#snspa-q-date').value, ids: [] }, 'Obsada usunięta — formularz podpowie kelnerów z Grafiku.'); });
         if (state.tab === 'waiterSettlement' && state.wsData) updateWsDiffs();
 
         var dateInput = root.querySelector('#snspa-date');

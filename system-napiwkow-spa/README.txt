@@ -472,3 +472,22 @@ z serwisu, ich suma (dodawane są kwoty) oraz pusta rubryka „Kwota otrzymana (
 wpisania długopisem oraz wiersz RAZEM. PDF zawiera tylko tytuł, miesiąc i tabelę. Kwoty liczone jak w „Rozliczeniu
 z kelnerami” (netto po podatku 26+, z wyjątkami procentowymi). Raport nie zawiera pełnych
 napiwków kelnerów ani udziału drugiej sekcji; gotówka jest pominięta.
+
+== 1.3.0 — Szybkie napiwki (telefon + PIN) ==
+Osoby wyznaczone przez administratora wprowadzają napiwki z KARTY i SERWISU kelnerów
+z telefonu, wyłącznie za dzisiejszy dzień.
+- Adres: https://<strona>/?napiwki-szybkie (osobna, pełnoekranowa strona z manifestem —
+  „Dodaj do ekranu początkowego” tworzy ikonę jak aplikacja). Alternatywnie shortcode
+  [napiwki_szybkie] na dowolnej stronie.
+- Logowanie PIN-em (4–8 cyfr, unikalny, przechowywany jako hash). Limit: 5 błędnych PIN-ów
+  z adresu IP i 30 łącznie na 15 minut. Sesja ważna do końca dnia; następnego dnia PIN
+  trzeba wpisać ponownie. Odebranie dostępu działa natychmiast.
+- Lista kelnerów: obsada ustawiona przez administratora na ten dzień, a bez niej — kelnerzy
+  z Grafiku (opublikowane zmiany), plus każdy, kto ma już wpis. Osobę można dodać z listy
+  lub usunąć.
+- Zapis działa jak zapis kierownika w zakładce „Dzień”: zastępuje karty i serwis całego
+  dnia i przelicza dzień. Jeśli kierownik już wpisał kwoty — formularz otwiera się z nimi.
+- Po zapisie: komunikat „Dane zostały zapisane” (kto, o której), tabela podsumowania
+  i przycisk „Edytuj”.
+- Ustawienia → „Szybkie napiwki”: adres strony, nadawanie/zmiana/odbieranie PIN-ów,
+  obsada dnia (z podpowiedzią z Grafiku). Tylko administrator strony.
