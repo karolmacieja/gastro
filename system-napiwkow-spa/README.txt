@@ -490,10 +490,14 @@ z telefonu, wyłącznie za dzisiejszy dzień.
 - Po zapisie: komunikat „Dane zostały zapisane” (kto, o której), tabela podsumowania
   i przycisk „Edytuj”.
 - Ustawienia → „Szybkie napiwki”: adres strony, nadawanie/zmiana/odbieranie PIN-ów,
-  obsada dnia (z podpowiedzią z Grafiku). Tylko administrator strony.
+  Tylko administrator strony. (Od 1.3.2 obsada dnia jest w osobnej zakładce — patrz niżej.)
 
 == 1.3.1 — kto wpisał napiwki ==
 W zakładce „Dzień”, w karcie managera („karta / serwis kelnerów”), widać, kto wpisał
 napiwki z karty i serwisu na ten dzień: osoba, sposób (szybkie napiwki z telefonu albo
 panel kierownika), data i godzina; poniżej do 5 wcześniejszych zapisów tego dnia.
 Dni wpisane przed aktualizacją przez panel kierownika: „autor nieznany”.
+
+== 1.3.2 — osobna zakładka „Obsada dnia” ==
+Obsada kelnerów na dany dzień (dla szybkich napiwków) ma własną zakładkę: Dzień → Obsada dnia
+(tylko administrator strony). W Ustawieniach zostało nadawanie dostępu (PIN-y) i adres strony.

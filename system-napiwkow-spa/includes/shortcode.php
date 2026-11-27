@@ -437,6 +437,7 @@ function snspa_js_body() {
         servicePool: { section:'reports', label:'Rozliczenie serwisu', icon:'fa-balance-scale' },
         waiterSettlement: { section:'reports', label:'Rozliczenie z kelnerami', icon:'fa-handshake' },
         sectionReport: { section:'reports', label:'Raport dla sekcji', icon:'fa-file-signature' },
+        roster: { section:'day', label:'Obsada dnia', icon:'fa-user-check' },
         email: { section:'more', label:'E-mail', icon:'fa-envelope' },
         push: { section:'more', label:'Powiadomienia', icon:'fa-bell' },
         settings: { section:'more', label:'Ustawienia', icon:'fa-cog' }
@@ -455,7 +456,7 @@ function snspa_js_body() {
         if (f.isManager) ids.push('check');
         if (f.isAdminBar || f.isAdminKtc) ids.push('servicePool', 'waiterSettlement');
         // Raport miesięczny dla kuchni/baru — wyłącznie administrator strony.
-        if (f.canSectionReport) ids.push('sectionReport');
+        if (f.canSectionReport) ids.push('sectionReport', 'roster');
         if (f.isManager || f.isAdminBar || f.isAdminKtc) ids.push('email', 'push');
         if (f.isAdmin) ids.push('settings');
         return ids;
@@ -478,7 +479,7 @@ function snspa_js_body() {
         if (id === 'day' && !state.day) loadDay();
         if (id === 'month' && !state.month) loadMonth();
         if (id === 'settings' && !state.settings) loadSettings();
-        if (id === 'settings' && !state.quick && (state.flags || {}).canSectionReport) loadQuick();
+        if ((id === 'settings' || id === 'roster') && !state.quick && (state.flags || {}).canSectionReport) loadQuick();
         if (id === 'settings' && !state.onesignalSettings) { api('/onesignal-settings').then(function(d){ state.onesignalSettings = d; render(); }); }
         if (id === 'check' && !state.staffList) { loadStaffList().then(render); }
         if (id === 'servicePool' && !state.poolData) loadServicePool();
@@ -522,6 +523,7 @@ function snspa_js_body() {
         else if (state.tab === 'servicePool') html += renderServicePool();
         else if (state.tab === 'waiterSettlement') html += renderWaiterSettlement();
         else if (state.tab === 'sectionReport') html += renderSectionReport();
+        else if (state.tab === 'roster') html += '<div class="snspa-body"><div class="snspa-grid">' + renderQuickRoster() + '</div></div>';
         else if (state.tab === 'email') html += renderEmail();
         else if (state.tab === 'push') html += renderPush();
         else if (state.tab === 'settings') html += renderSettings();
@@ -1356,7 +1358,17 @@ function snspa_js_body() {
             '<label style="width:140px;">PIN (4–8 cyfr)<input type="text" inputmode="numeric" maxlength="8" id="snspa-q-pin" autocomplete="off"></label>' +
             '<button class="snspa-save" style="width:auto;margin:0;" id="snspa-q-add" type="button">Nadaj PIN</button></div>';
 
-        html += '<h4 style="margin:6px 0;">Obsada dnia (opcjonalnie)</h4>';
+        html += '<div class="snspa-muted" style="margin-top:6px;"><i class="fas fa-user-check"></i> Obsadę kelnerów na konkretny dzień ustawisz w zakładce <b>Dzień → Obsada dnia</b>.</div>';
+        html += '</div>';
+        return html;
+    }
+
+    // Zakładka „Obsada dnia”: kelnerzy podpowiadani w szybkich napiwkach na wybrany dzień.
+    function renderQuickRoster(){
+        var q = state.quick;
+        var html = '<div class="snspa-card role-summary snspa-settings" style="grid-column:1/-1;"><h3><i class="fas fa-user-check"></i> Obsada dnia — szybkie napiwki</h3>';
+        if (!q){ return html + '<div class="snspa-loading">Ładowanie…</div></div>'; }
+        if (state.quickMsg) html += '<div class="snspa-msg' + (state.quickMsg.err ? ' err' : '') + '">' + esc(state.quickMsg.text) + '</div>';
         html += '<div class="snspa-muted" style="margin-bottom:8px;">Bez obsady formularz podpowiada kelnerów z Grafiku na ten dzień; osoba wprowadzająca i tak może dodać lub usunąć kelnera.</div>';
         html += '<label>Dzień <input type="date" id="snspa-q-date" value="' + esc(q.date) + '"></label>';
         var sched = {}; q.schedule.forEach(function(id){ sched[id] = 1; });
